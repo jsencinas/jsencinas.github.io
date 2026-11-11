@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uidneTLylGexlHGWM6BEQC+9ycKmhzDm5I2OWgeiRlU='; style-src 'self'; img-src 'self'; font-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Gk5MpRhphbZQluxbbP7QkhAmW0XrTdwfiRHEAZEoQyM='; style-src 'self'; img-src 'self'; font-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Jorge Sánchez Encinas · Computer Science student</title>
   <meta name="description" content="Computer Science student at Tec de Monterrey. Real-time AI, robot control software, and a growing focus on cybersecurity.">
@@ -20,15 +20,20 @@
   <link rel="stylesheet" href="assets/css/site.css">
   <link rel="modulepreload" href="assets/js/sphere.js">
   <link rel="modulepreload" href="assets/js/page.js">
-  <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!sessionStorage.getItem('intro-seen')){d.classList.add('intro-on');sessionStorage.setItem('intro-seen','1')}}catch(e){}})();</script>
+  <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!location.hash){d.classList.add('intro-on');if('scrollRestoration' in history)history.scrollRestoration='manual'}}catch(e){}})();</script>
   <script type="module" src="assets/js/main.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <!-- Intro on every load (not with reduced motion or a #link): the name splits to the edges
+       along a hairline, the row rises to the nav, then the headline is wiped in (site.css, "7. Intro") -->
   <div class="intro" aria-hidden="true">
-    <span class="intro__line"></span>
-    <p class="intro__name">Jorge Sánchez Encinas</p>
+    <div class="intro__row">
+      <span class="intro__half intro__half--l"><span class="intro__word">Jorge Enrique</span><span class="intro__rule"></span></span>
+      <svg class="mark intro__mark" viewBox="0 0 32 32" focusable="false"><rect class="mark__bg" width="32" height="32" rx="7"/><path class="mark__glyph" d="M9 10.5l5.5 5.5L9 21.5M17 21.75h6.5"/></svg>
+      <span class="intro__half intro__half--r"><span class="intro__rule"></span><span class="intro__word">Sánchez Encinas</span></span>
+    </div>
   </div>
 
   <header class="nav" data-nav>

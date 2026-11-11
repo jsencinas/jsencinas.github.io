@@ -17,7 +17,7 @@ const RESOLVE = {
 /* ---------------------------------------------- */
 
 const root = document.documentElement;
-const firstVisit = root.classList.contains('intro-on');
+const introOn = root.classList.contains('intro-on'); // every load, except reduced motion or a #link
 
 function cssMs(name, fallback) {
   const v = getComputedStyle(root).getPropertyValue(name).trim();
@@ -93,45 +93,53 @@ function initHero() {
   const sphere = initSphere(document.querySelector('.hero__canvas'));
   const intro = document.querySelector('.intro');
 
-  if (!firstVisit || !intro) {
+  if (!introOn || !intro) {
     if (intro) intro.remove();
     sphere.reveal();
     return;
   }
 
-  // First visit: captions scramble now, while the overlay still covers them.
+  // Captions scramble now, while the overlay still covers them, and resolve after the headline wipe.
   const jobs = [...document.querySelectorAll('[data-resolve]')].map(prepareResolve);
 
-  const outDelay = cssMs('--intro-out-delay', 950);
+  const outDelay = cssMs('--intro-out-delay', 2600);
   const outDur = cssMs('--intro-out-dur', 500);
+  const wipeEnd = cssMs('--intro-wipe-delay', 2900) + cssMs('--intro-wipe-dur', 900) + cssMs('--intro-wipe-stagger', 160);
   const skipDur = cssMs('--intro-skip-dur', 150);
-  const t0 = performance.now();
-  const inputs = ['keydown', 'pointerdown', 'wheel', 'touchstart', 'scroll'];
-  let revealed = false;
+  const inputs = ['keydown', 'pointerdown', 'wheel', 'touchstart'];
+  const timers = [];
+  let revealed = false, resolved = false, done = false;
 
-  function reveal(fadeMs) {
+  function reveal() {
     if (revealed) return;
     revealed = true;
     sphere.reveal();
-    setTimeout(() => runResolve(jobs), fadeMs);
+  }
+  function resolveCaptions() {
+    if (resolved) return;
+    resolved = true;
+    runResolve(jobs);
   }
   function finish() {
+    if (done) return;
+    done = true;
     inputs.forEach((e) => removeEventListener(e, skip, true));
     intro.remove();
   }
+  // Any input ends the intro at once: overlay out in 150 ms, headline uncovered, captions resolve.
   function skip() {
+    timers.forEach(clearTimeout);
     inputs.forEach((e) => removeEventListener(e, skip, true));
-    if (performance.now() - t0 >= outDelay) return; // already fading out
-    clearTimeout(timer);
     root.classList.add('intro-skip');
-    reveal(skipDur);
+    reveal();
+    setTimeout(resolveCaptions, skipDur);
+    setTimeout(finish, skipDur + 50);
   }
 
-  const timer = setTimeout(() => reveal(outDur), outDelay);
-  intro.addEventListener('animationend', (e) => {
-    if (e.target === intro) finish();
-  });
-  setTimeout(finish, outDelay + outDur + 1000); // safety net
+  timers.push(setTimeout(reveal, outDelay));
+  timers.push(setTimeout(finish, outDelay + outDur + 100));
+  timers.push(setTimeout(resolveCaptions, wipeEnd));
+  timers.push(setTimeout(() => inputs.forEach((e) => removeEventListener(e, skip, true)), wipeEnd));
   inputs.forEach((e) => addEventListener(e, skip, { capture: true, passive: true }));
 }
 

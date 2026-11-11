@@ -17,8 +17,8 @@ const SPHERE = {
   perspective: 0.16,        // 0 = flat; >0 makes front dots spread slightly wider
 
   // Dot counts. The auto-reducer steps down each ladder when frames are slow.
-  ladderDesktop: [1400, 1000, 700],
-  ladderPhone: [650, 450],
+  ladderDesktop: [2000, 1400, 1000, 700],
+  ladderPhone: [900, 650, 450],
   champagneShare: 0.04,     // of all dots
   looseShare: 0.06,         // of all dots, floating outside the shell
   looseRadius: [1.04, 1.28],// in sphere radii
@@ -51,14 +51,14 @@ const SPHERE = {
   burstSink: 0.08,          // downward drift while the dust hangs, in sphere radii
   burstDim: 0.35,           // share of alpha lost at full scatter
 
-  // Compositions: after each burst the dust rebuilds the sphere with the next one, then the list repeats.
-  // dots: even scatter · parallels: latitude rings · meridians: pole-to-pole lines
-  // geodesic: the edges of a subdivided icosahedron · voxel: the sphere snapped to a coarse 3D grid
-  figures: ['dots', 'parallels', 'meridians', 'geodesic', 'voxel'],
-  parallels: { rings: 13, maxLatDeg: 78 },
-  meridians: { lines: 14, maxLatDeg: 84 },
-  geodesic: { frequency: 2 },
-  voxel: { dotsPerCell: 2 },              // stacked dots make each grid cell read as one brighter pixel
+  // Textures: after each burst the dust rebuilds the sphere with the next one, then the list repeats.
+  // dots: the even lattice (first) · rock: a lumpy surface · dust: fine loose grain
+  // terrain: dense patches and sparse areas · bands: turbulent stripes, like a gas planet
+  figures: ['dots', 'rock', 'dust', 'terrain', 'bands'],
+  rock: { lumps: 0.3, detail: 0.08, scale: 0.86, light: [-0.55, 0.65, 0.5], shade: 0.08 }, // shade: density on the dark side
+  dust: { jitter: 0.3 },                   // shell thickness, in sphere radii
+  terrain: { freq: 1.5, floor: 0.03 },     // floor: density left in the sparse areas
+  bands: { count: 7, warp: 1.3, floor: 0.03 },
 
   // Rendering budget
   fps: 30,
@@ -94,42 +94,47 @@ function bucketOf(edges, depth) {
 const PHI = (Math.sqrt(5) - 1) / 2;
 const frac = (v) => v - Math.floor(v);
 
-/* ---------- Compositions ----------
-   Each returns m points on the unit sphere as a flat [x, y, z, ...] array. */
+/* ---------- Textures ----------
+   Each returns m points on (or near) the unit sphere as a flat [x, y, z, ...] array.
+   All but the first are unordered, shaped by seeded 3D value noise, so they look the same on every visit. */
 
-// Spread m dots along several curves (each a function of t in 0..1) at even spacing by length.
-function alongCurves(curves, m) {
-  const steps = Math.max(16, Math.round(1200 / curves.length));
-  const tables = curves.map((f) => {
-    const cum = [0];
-    let prev = f(0);
-    for (let k = 1; k <= steps; k++) {
-      const q = f(k / steps);
-      cum.push(cum[k - 1] + Math.hypot(q[0] - prev[0], q[1] - prev[1], q[2] - prev[2]));
-      prev = q;
-    }
-    return cum;
-  });
-  const total = tables.reduce((s, c) => s + c[steps], 0);
-  const counts = tables.map((c) => Math.floor((c[steps] / total) * m));
-  for (let left = m - counts.reduce((s, c) => s + c, 0), k = 0; left > 0; left--, k = (k + 1) % counts.length) counts[k]++;
-  const out = new Float32Array(m * 3);
-  let i = 0;
-  curves.forEach((f, c) => {
-    const cum = tables[c], len = cum[steps];
-    let k = 0;
-    for (let j = 0; j < counts[c]; j++, i++) {
-      const target = ((j + 0.5) / counts[c]) * len;
-      while (k < steps - 1 && cum[k + 1] < target) k++;
-      const t = (k + (target - cum[k]) / Math.max(1e-9, cum[k + 1] - cum[k])) / steps;
-      const q = f(t);
-      out[i * 3] = q[0]; out[i * 3 + 1] = q[1]; out[i * 3 + 2] = q[2];
-    }
-  });
-  return out;
+function makeNoise(seed) {
+  const rnd = mulberry32(seed), perm = new Uint8Array(512), vals = new Float32Array(256);
+  const p = Array.from({ length: 256 }, (_, i) => i);
+  for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+  for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+  for (let i = 0; i < 256; i++) vals[i] = rnd() * 2 - 1;
+  const h = (x, y, z) => vals[perm[(perm[(perm[x & 255] + y) & 255] + z) & 255]];
+  const sm = (t) => t * t * (3 - 2 * t);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const noise = (x, y, z) => {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    const u = sm(x - xi), v = sm(y - yi), w = sm(z - zi);
+    return lerp(
+      lerp(lerp(h(xi, yi, zi), h(xi + 1, yi, zi), u), lerp(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), u), v),
+      lerp(lerp(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), u), lerp(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), u), v), w);
+  };
+  // fractal sum of 4 octaves, about -1..1
+  return (x, y, z) => {
+    let s = 0, a = 0.5, f = 1;
+    for (let o = 0; o < 4; o++) { s += a * noise(x * f + 17, y * f + 31, z * f + 47); a *= 0.5; f *= 2; }
+    return s / 0.9375;
+  };
 }
 
-const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
+// m points spread uniformly over the sphere, kept with probability density(x, y, z) in 0..1
+function scatter(m, seed, density, place) {
+  const rnd = mulberry32(seed), out = new Float32Array(m * 3);
+  for (let i = 0, tries = 0; i < m; tries++) {
+    const y = rnd() * 2 - 1, a = rnd() * TAU, r = Math.sqrt(1 - y * y);
+    const x = Math.cos(a) * r, z = Math.sin(a) * r;
+    if (tries < m * 40 && rnd() > density(x, y, z)) continue;
+    const q = place ? place(x, y, z, rnd) : [x, y, z];
+    out[i * 3] = q[0]; out[i * 3 + 1] = q[1]; out[i * 3 + 2] = q[2];
+    i++;
+  }
+  return out;
+}
 
 const FIGURES = {
   dots(m) {
@@ -140,70 +145,41 @@ const FIGURES = {
     }
     return out;
   },
-  parallels(m) {
-    const { rings, maxLatDeg } = SPHERE.parallels, curves = [];
-    for (let k = 0; k < rings; k++) {
-      const lat = (-maxLatDeg + (2 * maxLatDeg * k) / (rings - 1)) * Math.PI / 180;
-      const y = Math.sin(lat), r = Math.cos(lat), off = k * 0.37;
-      curves.push((t) => [r * Math.cos(TAU * (t + off)), y, r * Math.sin(TAU * (t + off))]);
-    }
-    return alongCurves(curves, m);
+  rock(m) {
+    // lumpy surface; more dots where a fixed light hits it, so it reads as a lit, solid stone
+    const { lumps, detail, scale, light, shade } = SPHERE.rock, n = makeNoise(SPHERE.seed + 11);
+    const L = Math.hypot(light[0], light[1], light[2]), lx = light[0] / L, ly = light[1] / L, lz = light[2] / L;
+    const radius = (x, y, z) => 1 + lumps * n(x * 1.2, y * 1.2, z * 1.2) + detail * n(x * 4.5, y * 4.5, z * 4.5);
+    return scatter(m, SPHERE.seed + 12, (x, y, z) => {
+      // light from one side, broken up by the lumps (raised parts catch more light)
+      const d = Math.max(0, (x * lx + y * ly + z * lz) * 0.75 + n(x * 1.2, y * 1.2, z * 1.2) * 0.9 + 0.15);
+      return shade + (1 - shade) * Math.min(1, d * d);
+    }, (x, y, z) => {
+      const k = scale * radius(x, y, z);
+      return [x * k * 1.05, y * k * 0.95, z * k];
+    });
   },
-  meridians(m) {
-    const { lines, maxLatDeg } = SPHERE.meridians, top = maxLatDeg * Math.PI / 180, curves = [];
-    for (let k = 0; k < lines; k++) {
-      const lon = (k / lines) * TAU;
-      curves.push((t) => { const lat = -top + 2 * top * t, r = Math.cos(lat); return [r * Math.cos(lon), Math.sin(lat), r * Math.sin(lon)]; });
-    }
-    return alongCurves(curves, m);
+  dust(m) {
+    const j = SPHERE.dust.jitter;
+    return scatter(m, SPHERE.seed + 21, () => 1, (x, y, z, rnd) => {
+      const k = 1 + (rnd() - 0.5) * j;
+      return [x * k, y * k, z * k];
+    });
   },
-  geodesic(m) {
-    // Icosahedron, each face split `frequency` times, edges bent onto the sphere
-    const g = (1 + Math.sqrt(5)) / 2;
-    const V = [[-1, g, 0], [1, g, 0], [-1, -g, 0], [1, -g, 0], [0, -1, g], [0, 1, g], [0, -1, -g], [0, 1, -g],
-      [g, 0, -1], [g, 0, 1], [-g, 0, -1], [-g, 0, 1]].map(norm);
-    const F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6],
-      [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
-    const n = SPHERE.geodesic.frequency, seen = new Set(), curves = [];
-    const key = (p) => p.map((v) => v.toFixed(4)).join(',');
-    for (const [a, b, c] of F) {
-      // grid points of the face: P(i, j) = a + (b - a) i/n + (c - a) j/n
-      const P = (i, j) => [0, 1, 2].map((d) => V[a][d] + (V[b][d] - V[a][d]) * i / n + (V[c][d] - V[a][d]) * j / n);
-      for (let i = 0; i <= n; i++) for (let j = 0; i + j <= n; j++) {
-        for (const [di, dj] of [[1, 0], [0, 1], [-1, 1]]) {
-          const i2 = i + di, j2 = j + dj;
-          if (i2 < 0 || j2 < 0 || i2 + j2 > n) continue;
-          const p = P(i, j), q = P(i2, j2), id = [key(norm(p)), key(norm(q))].sort().join('|');
-          if (seen.has(id)) continue;
-          seen.add(id);
-          curves.push((t) => norm([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t]));
-        }
-      }
-    }
-    return alongCurves(curves, m);
+  terrain(m) {
+    const { freq, floor } = SPHERE.terrain, n = makeNoise(SPHERE.seed + 31);
+    return scatter(m, SPHERE.seed + 32, (x, y, z) => {
+      const v = n(x * freq, y * freq, z * freq);
+      const t = Math.min(1, Math.max(0, (v - 0.02) / 0.12));
+      return floor + (1 - floor) * t * t * (3 - 2 * t);
+    });
   },
-  voxel(m) {
-    // Grid points whose cell the sphere's surface passes through; the spacing is searched so the count fits m
-    const cells = (h) => {
-      const pts = [], k = Math.ceil(1 / h) + 1;
-      for (let x = -k; x <= k; x++) for (let y = -k; y <= k; y++) for (let z = -k; z <= k; z++) {
-        const d = Math.hypot(x, y, z) * h;
-        if (Math.abs(d - 1) <= h * 0.5) pts.push([x * h, y * h, z * h]);
-      }
-      return pts;
-    };
-    const want = Math.max(1, Math.floor(m / SPHERE.voxel.dotsPerCell));
-    const h0 = Math.sqrt((4 * Math.PI) / want);    // about one cell per h0² of surface
-    let lo = h0 * 0.6, hi = h0 * 1.6, pts = null;
-    for (let it = 0; it < 10; it++) {
-      const mid = (lo + hi) / 2, c = cells(mid);
-      if (c.length >= want) { lo = mid; pts = c; } else hi = mid;
-    }
-    if (!pts) pts = cells(lo);
-    // dots fill the cells round-robin, so every cell gets dotsPerCell (a few get one fewer)
-    const out = new Float32Array(m * 3);
-    for (let i = 0; i < m; i++) { const q = pts[i % pts.length]; out[i * 3] = q[0]; out[i * 3 + 1] = q[1]; out[i * 3 + 2] = q[2]; }
-    return out;
+  bands(m) {
+    const { count, warp, floor } = SPHERE.bands, n = makeNoise(SPHERE.seed + 41);
+    return scatter(m, SPHERE.seed + 42, (x, y, z) => {
+      const s = 0.5 + 0.5 * Math.sin(y * count * 1.6 + n(x * 2, y * 2, z * 2) * warp);
+      return floor + (1 - floor) * s * s * s * s;
+    });
   },
 };
 
