@@ -38,6 +38,19 @@ const SPHERE = {
   assembleMs: 1800,
   assembleDelayMaxMs: 400,  // random per-dot head start, 0..this
 
+  // Pulverize and rebuild, on a loop once the sphere has formed (never with reduced motion).
+  // The clock only runs while the hero is on screen and the tab is visible.
+  holdMs: 12000,            // whole sphere between bursts
+  burstMs: 1300,            // crumble outward
+  burstDelayMaxMs: 350,     // random per-dot head start for the crumble
+  hangMs: 900,              // dust hangs and sinks a little
+  reformMs: 2000,           // pull back into the sphere
+  reformDelayMaxMs: 500,    // random per-dot head start for the rebuild
+  burstSpread: [0.25, 1.15],// extra outward distance, in sphere radii (scaled by the dot's distance from center)
+  burstJitter: 0.4,         // random scatter in any direction, in sphere radii
+  burstSink: 0.08,          // downward drift while the dust hangs, in sphere radii
+  burstDim: 0.35,           // share of alpha lost at full scatter
+
   // Rendering budget
   fps: 30,
   dprMax: 1.5,
@@ -52,6 +65,7 @@ const TAU = Math.PI * 2;
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 const SHELL = 0, CHAMP = 1, LOOSE = 2;
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 function mulberry32(a) {
   return () => {
@@ -82,6 +96,8 @@ export function initSphere(canvas) {
 
   // Per-dot data (structure of arrays)
   let n = 0, X, Y, Z, R, K, SX, SY, D, P;
+  // Per-dot burst data: outward spread, scatter vector, crumble and rebuild delays
+  let BS, BX, BY, BD, BR;
   // Per-bucket screen positions, rebuilt every frame
   let buf = [], len = [];
 
@@ -93,7 +109,9 @@ export function initSphere(canvas) {
 
   // Time state
   let raf = 0, prev = 0, lastDraw = 0, simTime = 0;
-  let assembleStart = -1, assembled = false;
+  let assembleStart = -1, assembled = false, cycleFrom = 0;
+  const cycleMs = SPHERE.holdMs + SPHERE.burstMs + SPHERE.burstDelayMaxMs + SPHERE.hangMs
+    + SPHERE.reformMs + SPHERE.reformDelayMaxMs;
   let onScreen = true, monitorFrom = Infinity, sampleSum = 0, sampleCount = 0;
   let reduced = reducedMq.matches;
 
@@ -107,6 +125,16 @@ export function initSphere(canvas) {
     R = new Float32Array(n); K = new Uint8Array(n);
     SX = new Float32Array(n); SY = new Float32Array(n);
     D = new Float32Array(n); P = new Float32Array(n);
+    BS = new Float32Array(n); BX = new Float32Array(n); BY = new Float32Array(n);
+    BD = new Float32Array(n); BR = new Float32Array(n);
+    const rb = mulberry32(SPHERE.seed ^ 0x5eed); // separate stream: the sphere itself stays the same
+    for (let i = 0; i < n; i++) {
+      BS[i] = SPHERE.burstSpread[0] + rb() * (SPHERE.burstSpread[1] - SPHERE.burstSpread[0]);
+      const a = rb() * TAU, m = Math.sqrt(rb()) * SPHERE.burstJitter;
+      BX[i] = Math.cos(a) * m; BY[i] = Math.sin(a) * m;
+      BD[i] = rb() * SPHERE.burstDelayMaxMs;
+      BR[i] = rb() * SPHERE.reformDelayMaxMs;
+    }
     for (let i = 0; i < n; i++) {
       if (i < nShell) {
         // Fibonacci lattice: even coverage at any count
@@ -163,14 +191,27 @@ export function initSphere(canvas) {
     if (assembleStart < 0 || !cssW) return;
     const tA = reduced ? Infinity : now - assembleStart;
     const assembling = tA < SPHERE.assembleMs + SPHERE.assembleDelayMaxMs;
+    if (!assembling && !assembled) { assembled = true; cycleFrom = simTime; monitorFrom = now + SPHERE.warmupMs; }
 
-    if (assembling || fullClear) {
+    // Burst cycle: u is the time since the hold ended, -1 while the sphere is whole
+    let u = -1;
+    if (assembled && !reduced) {
+      const c = (simTime - cycleFrom) % cycleMs;
+      if (c >= SPHERE.holdMs) u = c - SPHERE.holdMs;
+    }
+    const bursting = u >= 0;
+    const free = assembling || bursting; // dots drawn one by one, anywhere on the canvas
+
+    if (free || fullClear) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      fullClear = assembling;
+      fullClear = free;
     } else {
       ctx.clearRect(clearBox[0], clearBox[1], clearBox[2], clearBox[3]);
     }
-    if (!assembling && !assembled) { assembled = true; monitorFrom = now + SPHERE.warmupMs; }
+    const reformAt = SPHERE.burstMs + SPHERE.burstDelayMaxMs + SPHERE.hangMs;
+    const sink = bursting
+      ? SPHERE.burstSink * radius * Math.min(1, Math.max(0, (u - SPHERE.burstMs - SPHERE.burstDelayMaxMs) / SPHERE.hangMs))
+      : 0;
 
     const ang = (simTime / SPHERE.revolutionMs) * TAU;
     const ca = Math.cos(ang), sa = Math.sin(ang);
@@ -213,6 +254,20 @@ export function initSphere(canvas) {
         ctx.globalAlpha = spec.alpha[b] * e;
         ctx.fillStyle = solid[kind === CHAMP ? 1 : 0];
         ctx.fillRect(Math.round(px * dpr - sd / 2), Math.round(py * dpr - sd / 2), sd, sd);
+      } else if (bursting) {
+        // k: 0 = on the sphere, 1 = fully scattered
+        let k;
+        if (u < reformAt) k = easeOutCubic(Math.min(1, Math.max(0, (u - BD[i]) / SPHERE.burstMs)));
+        else k = 1 - easeInOutCubic(Math.min(1, Math.max(0, (u - reformAt - BR[i]) / SPHERE.reformMs)));
+        if (k > 0) {
+          const out = radius * r * BS[i] * k;
+          px += x2 * out + BX[i] * radius * k;
+          py += -y2 * out + BY[i] * radius * k + sink * k;
+        }
+        const sd = sizeDev[kind][b];
+        ctx.globalAlpha = spec.alpha[b] * (1 - SPHERE.burstDim * k);
+        ctx.fillStyle = solid[kind === CHAMP ? 1 : 0];
+        ctx.fillRect(Math.round(px * dpr - sd / 2), Math.round(py * dpr - sd / 2), sd, sd);
       } else {
         const arr = buf[kind][b];
         const j = len[kind][b];
@@ -221,7 +276,7 @@ export function initSphere(canvas) {
       }
     }
 
-    if (assembling) { ctx.globalAlpha = 1; return; }
+    if (free) { ctx.globalAlpha = 1; return; }
 
     // Steady state: one fillStyle per bucket
     for (const kind of drawOrder) {

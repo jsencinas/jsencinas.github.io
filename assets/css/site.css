@@ -60,6 +60,7 @@
   --font-sans: "Archivo", "Archivo Fallback", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, Menlo, Consolas, monospace;
   --fs-display:   clamp(2.75rem, 1.636rem + 4.571vw, 5.75rem);
+  --fs-hero-sub:  clamp(1.625rem, 1.207rem + 1.714vw, 2.75rem);
   --fs-h2:        clamp(2rem, 1.443rem + 2.286vw, 3.5rem);
   --fs-statement: clamp(1.625rem, 1.207rem + 1.714vw, 2.75rem);
   --fs-h3:        clamp(1.375rem, 1.189rem + 0.762vw, 1.875rem);
@@ -561,7 +562,15 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   color: var(--text);
 }
 .hero__l1, .hero__l2 { display: block; }
-.hero__l2 { color: var(--text-2); text-wrap: balance; }
+.hero__l1 { text-wrap: balance; }
+.hero__l2 {                             /* the tagline sits under the name, smaller and gray */
+  margin-top: .35em;
+  font-size: var(--fs-hero-sub);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--text-2);
+  text-wrap: balance;
+}
 
 .hero__foot {
   grid-row: 4;
@@ -649,6 +658,31 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
     transform var(--t-slow) var(--ease-out) var(--reveal-delay, 0ms);
 }
 .reveal-ready [data-reveal].is-in { opacity: 1; transform: none; }
+/* Extra scroll motion, all on top of the fade-up and all off with reduced motion:
+   - section titles rise a little further
+   - the path hairline draws from left to right
+   - project and panel media settle from a slight zoom
+   - skill groups come in one after another */
+.reveal-ready .section__title[data-reveal]:not(.is-in) { transform: translateY(32px); }
+.reveal-ready .path[data-reveal]::after {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1100ms var(--ease-out) calc(var(--reveal-delay, 0ms) + 150ms);
+}
+.reveal-ready .path[data-reveal].is-in::after { transform: none; }
+.reveal-ready [data-reveal] .media > :is(.media__video, .media__poster) {
+  scale: 1.08;
+  transition: opacity var(--t-video) linear, scale 1400ms var(--ease-out) var(--reveal-delay, 0ms);
+}
+.reveal-ready [data-reveal].is-in .media > :is(.media__video, .media__poster) { scale: 1; }
+.reveal-ready .ls[data-reveal] > .ls__group {
+  opacity: 0;
+  transform: translateX(-12px);
+  transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+}
+.reveal-ready .ls[data-reveal] > .ls__group:nth-child(2) { transition-delay: 120ms; }
+.reveal-ready .ls[data-reveal] > .ls__group:nth-child(3) { transition-delay: 240ms; }
+.reveal-ready .ls[data-reveal].is-in > .ls__group { opacity: 1; transform: none; }
 
 /* Wide screens: the section title sits on the left and its content starts at column 6,
    the same line the about text and the leadership rows use */
@@ -757,9 +791,11 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .term.is-visible .term__cursor { animation-play-state: running; }
 @keyframes term-blink { 50% { opacity: 0; } }
 /* typing state (main.js): rows and the final prompt wait for the command */
+.term__rows > li { transition: opacity 360ms var(--ease-out), transform 360ms var(--ease-out); }
 .term.is-typing .term__rows > li,
 .term.is-typing .term__line--end { opacity: 0; }
-.term__rows > li.is-shown { opacity: 1 !important; }
+.term.is-typing .term__rows > li { transform: translateY(6px); }
+.term__rows > li.is-shown { opacity: 1 !important; transform: none !important; }
 @media (min-width: 900px) {
   .term { padding: 24px 24px; }
   .term__row { min-height: 36px; padding-block: 4px; }

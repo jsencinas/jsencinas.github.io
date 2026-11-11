@@ -11,9 +11,9 @@ const PAGE = {
   revealStaggerMs: 60,    // between siblings
   revealStaggerMax: 4,    // siblings after this one share the last delay
   termAt: 0.4,            // visible share that starts the typing
-  termDelayMs: 300,
-  typeEveryMs: 55,        // per character of the command
-  rowEveryMs: 90,         // between the listing rows
+  termDelayMs: 500,
+  typeEveryMs: 95,        // per character of the command
+  rowEveryMs: 260,        // between the listing rows
   statementGroups: 3,     // fallback without scroll-driven animations
   statementAt: 0.4,
   panelAt: 0.25,          // visible share that plays the wide video

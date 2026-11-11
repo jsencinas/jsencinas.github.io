@@ -8,7 +8,7 @@ Single-page portfolio. Plain HTML, CSS and vanilla JavaScript, no build step. Se
 - `assets/css/site.css`: all styles. Design tokens are the custom properties at the top.
 - `assets/js/main.js`: intro, phone menu, caption resolve, footer clock, console greeting.
 - `assets/js/page.js`: fade-up on scroll, terminal typing and cursor, statement reveal, video playback rules.
-- `assets/js/sphere.js`: the hero dot sphere (2D canvas). Visual constants are in the block at the top.
+- `assets/js/sphere.js`: the hero dot sphere (2D canvas). Every 12 s it crumbles into dust and rebuilds; `holdMs` and the `burst*` values set the timing and the spread. Visual constants are in the block at the top.
 - `assets/fonts/`: self-hosted WOFF2 subsets of Archivo (variable, weights 400 to 500) and Geist Mono (400).
 - `assets/video/`: sample videos and their WebP posters (see below).
 - `.well-known/security.txt`: RFC 9116 contact file.
