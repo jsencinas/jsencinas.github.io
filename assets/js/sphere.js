@@ -40,7 +40,7 @@ const SPHERE = {
 
   // Pulverize and rebuild, on a loop once the sphere has formed (never with reduced motion).
   // The clock only runs while the hero is on screen and the tab is visible.
-  holdMs: 12000,            // whole sphere between bursts
+  holdMs: 5000,             // whole sphere between bursts
   burstMs: 1300,            // crumble outward
   burstDelayMaxMs: 350,     // random per-dot head start for the crumble
   hangMs: 900,              // dust hangs and sinks a little
@@ -122,10 +122,12 @@ function makeNoise(seed) {
   };
 }
 
-// m points spread uniformly over the sphere, kept with probability density(x, y, z) in 0..1
-function scatter(m, seed, density, place) {
+// m points spread uniformly over the sphere, kept with probability density(x, y, z) in 0..1.
+// A generator: it pauses every 64 tries so a build can be spread over several idle slices.
+function* scatter(m, seed, density, place) {
   const rnd = mulberry32(seed), out = new Float32Array(m * 3);
   for (let i = 0, tries = 0; i < m; tries++) {
+    if ((tries & 63) === 63) yield;
     const y = rnd() * 2 - 1, a = rnd() * TAU, r = Math.sqrt(1 - y * y);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (tries < m * 40 && rnd() > density(x, y, z)) continue;
@@ -136,8 +138,11 @@ function scatter(m, seed, density, place) {
   return out;
 }
 
+// Every texture is a generator that returns its points; runAll finishes one in a single go.
+function runAll(it) { for (;;) { const r = it.next(); if (r.done) return r.value; } }
+
 const FIGURES = {
-  dots(m) {
+  *dots(m) {
     const out = new Float32Array(m * 3);
     for (let i = 0; i < m; i++) {
       const y = 1 - ((i + 0.5) / m) * 2, r = Math.sqrt(1 - y * y), th = i * GOLDEN;
@@ -145,12 +150,12 @@ const FIGURES = {
     }
     return out;
   },
-  rock(m) {
+  *rock(m) {
     // lumpy surface; more dots where a fixed light hits it, so it reads as a lit, solid stone
     const { lumps, detail, scale, light, shade } = SPHERE.rock, n = makeNoise(SPHERE.seed + 11);
     const L = Math.hypot(light[0], light[1], light[2]), lx = light[0] / L, ly = light[1] / L, lz = light[2] / L;
     const radius = (x, y, z) => 1 + lumps * n(x * 1.2, y * 1.2, z * 1.2) + detail * n(x * 4.5, y * 4.5, z * 4.5);
-    return scatter(m, SPHERE.seed + 12, (x, y, z) => {
+    return yield* scatter(m, SPHERE.seed + 12, (x, y, z) => {
       // light from one side, broken up by the lumps (raised parts catch more light)
       const d = Math.max(0, (x * lx + y * ly + z * lz) * 0.75 + n(x * 1.2, y * 1.2, z * 1.2) * 0.9 + 0.15);
       return shade + (1 - shade) * Math.min(1, d * d);
@@ -159,24 +164,24 @@ const FIGURES = {
       return [x * k * 1.05, y * k * 0.95, z * k];
     });
   },
-  dust(m) {
+  *dust(m) {
     const j = SPHERE.dust.jitter;
-    return scatter(m, SPHERE.seed + 21, () => 1, (x, y, z, rnd) => {
+    return yield* scatter(m, SPHERE.seed + 21, () => 1, (x, y, z, rnd) => {
       const k = 1 + (rnd() - 0.5) * j;
       return [x * k, y * k, z * k];
     });
   },
-  terrain(m) {
+  *terrain(m) {
     const { freq, floor } = SPHERE.terrain, n = makeNoise(SPHERE.seed + 31);
-    return scatter(m, SPHERE.seed + 32, (x, y, z) => {
+    return yield* scatter(m, SPHERE.seed + 32, (x, y, z) => {
       const v = n(x * freq, y * freq, z * freq);
       const t = Math.min(1, Math.max(0, (v - 0.02) / 0.12));
       return floor + (1 - floor) * t * t * (3 - 2 * t);
     });
   },
-  bands(m) {
+  *bands(m) {
     const { count, warp, floor } = SPHERE.bands, n = makeNoise(SPHERE.seed + 41);
-    return scatter(m, SPHERE.seed + 42, (x, y, z) => {
+    return yield* scatter(m, SPHERE.seed + 42, (x, y, z) => {
       const s = 0.5 + 0.5 * Math.sin(y * count * 1.6 + n(x * 2, y * 2, z * 2) * warp);
       return floor + (1 - floor) * s * s * s * s;
     });
@@ -200,7 +205,7 @@ export function initSphere(canvas) {
   // Per-dot burst data: outward spread, scatter vector, crumble and rebuild delays
   let BS, BX, BY, BD, BR;
   // Per-figure positions: FX[f], FY[f], FZ[f] for figure f
-  let FX = [], FY = [], FZ = [], nShellNow = 0, prebuildQueued = false;
+  let FX = [], FY = [], FZ = [], nShellNow = 0, building = null; // building: { f, it, gen } in progress
   // Per-bucket screen positions, rebuilt every frame
   let buf = [], len = [];
 
@@ -259,17 +264,15 @@ export function initSphere(canvas) {
     }
     // Figure positions: shell dots take each figure's shape, loose dots stay where they are
     // Only the first is built now; the others are built in idle time just before they are needed.
-    FX = []; FY = []; FZ = []; nShellNow = nShell;
+    FX = []; FY = []; FZ = []; nShellNow = nShell; building = null;
     ensureFigure(0);
     buf = kinds.map((k) => k.alpha.map(() => new Float32Array(n * 2)));
     len = kinds.map((k) => k.alpha.map(() => 0));
     fullClear = true;
   }
 
-  function ensureFigure(f) {
-    if (FX[f]) return;
+  function storeFigure(f, pts) {
     const fx = new Float32Array(n), fy = new Float32Array(n), fz = new Float32Array(n);
-    const pts = FIGURES[SPHERE.figures[f]](nShellNow);
     for (let i = 0; i < n; i++) {
       if (i < nShellNow) { fx[i] = pts[i * 3]; fy[i] = pts[i * 3 + 1]; fz[i] = pts[i * 3 + 2]; }
       else { fx[i] = X[i]; fy[i] = Y[i]; fz[i] = Z[i]; }
@@ -277,13 +280,32 @@ export function initSphere(canvas) {
     FX[f] = fx; FY[f] = fy; FZ[f] = fz;
   }
 
-  // Build the next figure while the current one holds, in idle time where the browser offers it.
+  // Needed now: finish it at once (continuing a build already under way).
+  function ensureFigure(f) {
+    if (FX[f]) return;
+    const it = building && building.f === f ? building.it : FIGURES[SPHERE.figures[f]](nShellNow);
+    if (building && building.f === f) building = null;
+    storeFigure(f, runAll(it));
+  }
+
+  // Build the next figure while the current one holds, a few milliseconds per idle slice.
   function prebuild(f) {
-    if (FX[f] || prebuildQueued) return;
-    prebuildQueued = true;
-    const run = () => { prebuildQueued = false; ensureFigure(f); };
-    if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 3000 });
-    else setTimeout(run, 200);
+    if (FX[f] || building) return;
+    const job = { f, it: FIGURES[SPHERE.figures[f]](nShellNow) };
+    building = job;
+    const idle = window.requestIdleCallback
+      ? (fn) => requestIdleCallback(fn, { timeout: 500 })
+      : (fn) => setTimeout(() => fn({ timeRemaining: () => 4 }), 50);
+    const step = (deadline) => {
+      if (building !== job) return;           // finished elsewhere, or the dot count changed
+      const until = performance.now() + Math.min(6, Math.max(2, deadline.timeRemaining()));
+      while (performance.now() < until) {
+        const r = job.it.next();
+        if (r.done) { building = null; storeFigure(f, r.value); return; }
+      }
+      idle(step);
+    };
+    idle(step);
   }
 
   function ladder() { return phone ? SPHERE.ladderPhone : SPHERE.ladderDesktop; }
@@ -330,6 +352,7 @@ export function initSphere(canvas) {
     }
     const bursting = u >= 0;
     const free = assembling || bursting; // dots drawn one by one, anywhere on the canvas
+    let lastFill = -1;                    // set the fill color only when it changes
 
     if (free || fullClear) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -389,7 +412,8 @@ export function initSphere(canvas) {
         py = oy + (py - oy) * e;
         const sd = sizeDev[kind][b];
         ctx.globalAlpha = spec.alpha[b] * e;
-        ctx.fillStyle = solid[kind === CHAMP ? 1 : 0];
+        const fs = kind === CHAMP ? 1 : 0;
+        if (fs !== lastFill) { ctx.fillStyle = solid[fs]; lastFill = fs; }
         ctx.fillRect(Math.round(px * dpr - sd / 2), Math.round(py * dpr - sd / 2), sd, sd);
       } else if (bursting) {
         // k: 0 = on the sphere, 1 = fully scattered
@@ -403,7 +427,8 @@ export function initSphere(canvas) {
         }
         const sd = sizeDev[kind][b];
         ctx.globalAlpha = spec.alpha[b] * (1 - SPHERE.burstDim * k);
-        ctx.fillStyle = solid[kind === CHAMP ? 1 : 0];
+        const fs = kind === CHAMP ? 1 : 0;
+        if (fs !== lastFill) { ctx.fillStyle = solid[fs]; lastFill = fs; }
         ctx.fillRect(Math.round(px * dpr - sd / 2), Math.round(py * dpr - sd / 2), sd, sd);
       } else {
         const arr = buf[kind][b];
