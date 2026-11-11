@@ -11,12 +11,9 @@ const SPHERE = {
   phoneBelow: 900,          // hero widths under this use the phone layout and counts
 
   // Orientation and motion
-  tiltZDeg: 18,             // sphere: axis lean in the screen plane
-  tiltXDeg: 14,             // sphere: axis lean toward the viewer (0 = none)
-  objectTiltZDeg: 6,        // the objects stand nearly upright
-  objectTiltXDeg: 12,
-  swayDeg: 35,              // turns this far left and right of facing you
-  swayMs: 20000,            // one full sway, left and back
+  tiltZDeg: 18,             // axis lean in the screen plane
+  tiltXDeg: 14,             // axis lean toward the viewer (0 = none)
+  revolutionMs: 90000,      // one full turn
   perspective: 0.16,        // 0 = flat; >0 makes front dots spread slightly wider
 
   // Dot counts. The auto-reducer steps down each ladder when frames are slow.
@@ -54,9 +51,14 @@ const SPHERE = {
   burstSink: 0.08,          // downward drift while the dust hangs, in sphere radii
   burstDim: 0.35,           // share of alpha lost at full scatter
 
-  // Figures: after each burst the dust rebuilds into the next one, then the list repeats.
-  // Each object is a few simple surfaces (see FIGURES below), sized to fit the unit sphere.
-  figures: ['sphere', 'padlock', 'microphone', 'gear', 'rocket'],
+  // Compositions: after each burst the dust rebuilds the sphere with the next one, then the list repeats.
+  // dots: even scatter · parallels: latitude rings · meridians: pole-to-pole lines
+  // geodesic: the edges of a subdivided icosahedron · voxel: the sphere snapped to a coarse 3D grid
+  figures: ['dots', 'parallels', 'meridians', 'geodesic', 'voxel'],
+  parallels: { rings: 13, maxLatDeg: 78 },
+  meridians: { lines: 14, maxLatDeg: 84 },
+  geodesic: { frequency: 2 },
+  voxel: { dotsPerCell: 2 },              // stacked dots make each grid cell read as one brighter pixel
 
   // Rendering budget
   fps: 30,
@@ -92,95 +94,45 @@ function bucketOf(edges, depth) {
 const PHI = (Math.sqrt(5) - 1) / 2;
 const frac = (v) => v - Math.floor(v);
 
-/* ---------- Figure surfaces ----------
-   Every part has an area and a sampler that maps a point (a, b) of the unit square
-   onto its surface. Dots are shared out by area (times an optional density `d`),
-   and each part spreads its dots with a 2D Fibonacci lattice, so coverage is even. */
-const part = {
-  // Surface of revolution between two circles on the Y axis: cylinder, cone or flat ring.
-  frustum(r0, y0, r1, y1, d = 1) {
-    const slant = Math.hypot(r1 - r0, y1 - y0);
-    return { area: Math.PI * (r0 + r1) * slant * d, at(a, b) {
-      const t = r0 === r1 ? a : (Math.sqrt(r0 * r0 + a * (r1 * r1 - r0 * r0)) - r0) / (r1 - r0);
-      const r = r0 + (r1 - r0) * t, th = TAU * b;
-      return [r * Math.cos(th), y0 + (y1 - y0) * t, r * Math.sin(th)];
-    } };
-  },
-  // Band of a sphere centered at (0, cy, 0), between heights y0 and y1 relative to the center.
-  zone(cy, R, y0, y1, d = 1) {
-    return { area: TAU * R * (y1 - y0) * d, at(a, b) {
-      const y = y0 + (y1 - y0) * a, r = Math.sqrt(Math.max(0, R * R - y * y)), th = TAU * b;
-      return [r * Math.cos(th), cy + y, r * Math.sin(th)];
-    } };
-  },
-  // Parallelogram from corner o along edges u and v.
-  rect(o, u, v, d = 1) {
-    const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
-    return { area: Math.hypot(c[0], c[1], c[2]) * d, at(a, b) {
-      return [o[0] + a * u[0] + b * v[0], o[1] + a * u[1] + b * v[1], o[2] + a * u[2] + b * v[2]];
-    } };
-  },
-  // Triangle p0, p1, p2.
-  tri(p0, p1, p2, d = 1) {
-    const u = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]], v = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
-    const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
-    return { area: Math.hypot(c[0], c[1], c[2]) / 2 * d, at(a, b) {
-      if (a + b > 1) { a = 1 - a; b = 1 - b; }
-      return [p0[0] + a * u[0] + b * v[0], p0[1] + a * u[1] + b * v[1], p0[2] + a * u[2] + b * v[2]];
-    } };
-  },
-  // Tube of radius `tube` along a circular arc in the XY plane (center cx, cy, radius R, angles t0..t1).
-  arc(cx, cy, R, tube, t0, t1, d = 1) {
-    return { area: TAU * tube * R * Math.abs(t1 - t0) * d, at(a, b) {
-      const t = t0 + (t1 - t0) * a, ps = TAU * b, nx = Math.cos(t), ny = Math.sin(t);
-      const w = R + tube * Math.cos(ps);
-      return [cx + w * nx, cy + w * ny, tube * Math.sin(ps)];
-    } };
-  },
-  // Straight tube between two points on the Y axis at (x, z), as a cylinder.
-  post(x, z, r, y0, y1, d = 1) {
-    const f = part.frustum(r, y0, r, y1, d);
-    return { area: f.area, at(a, b) { const q = f.at(a, b); return [q[0] + x, q[1], q[2] + z]; } };
-  },
-};
+/* ---------- Compositions ----------
+   Each returns m points on the unit sphere as a flat [x, y, z, ...] array. */
 
-// Box with half sizes hx, hy, hz centered at c, turned by `rot` around the Z axis.
-function box(c, hx, hy, hz, rot = 0, d = 1, skip = []) {
-  const cs = Math.cos(rot), sn = Math.sin(rot);
-  const tf = (q) => [c[0] + q[0] * cs - q[1] * sn, c[1] + q[0] * sn + q[1] * cs, c[2] + q[2]];
-  const faces = {
-    '+x': [[hx, -hy, -hz], [0, 2 * hy, 0], [0, 0, 2 * hz]], '-x': [[-hx, -hy, -hz], [0, 2 * hy, 0], [0, 0, 2 * hz]],
-    '+y': [[-hx, hy, -hz], [2 * hx, 0, 0], [0, 0, 2 * hz]], '-y': [[-hx, -hy, -hz], [2 * hx, 0, 0], [0, 0, 2 * hz]],
-    '+z': [[-hx, -hy, hz], [2 * hx, 0, 0], [0, 2 * hy, 0]], '-z': [[-hx, -hy, -hz], [2 * hx, 0, 0], [0, 2 * hy, 0]],
-  };
-  return Object.entries(faces).filter(([k]) => !skip.includes(k)).map(([, [o, u, v]]) => {
-    const r = part.rect(o, u, v, d);
-    return { area: r.area, at(a, b) { return tf(r.at(a, b)); } };
+// Spread m dots along several curves (each a function of t in 0..1) at even spacing by length.
+function alongCurves(curves, m) {
+  const steps = Math.max(16, Math.round(1200 / curves.length));
+  const tables = curves.map((f) => {
+    const cum = [0];
+    let prev = f(0);
+    for (let k = 1; k <= steps; k++) {
+      const q = f(k / steps);
+      cum.push(cum[k - 1] + Math.hypot(q[0] - prev[0], q[1] - prev[1], q[2] - prev[2]));
+      prev = q;
+    }
+    return cum;
   });
-}
-
-// Turn a surface whose axis is Y so that its axis points at the viewer (Z).
-const faceZ = (p) => ({ area: p.area, at(a, b) { const q = p.at(a, b); return [q[0], q[2], q[1]]; } });
-
-// Share m dots across the parts by weighted area and sample each part.
-function sample(parts, m) {
-  const total = parts.reduce((s, p) => s + p.area, 0);
-  const counts = parts.map((p) => Math.floor((p.area / total) * m));
-  let left = m - counts.reduce((s, c) => s + c, 0);
-  for (let k = 0; left > 0; k = (k + 1) % parts.length, left--) counts[k]++;
+  const total = tables.reduce((s, c) => s + c[steps], 0);
+  const counts = tables.map((c) => Math.floor((c[steps] / total) * m));
+  for (let left = m - counts.reduce((s, c) => s + c, 0), k = 0; left > 0; left--, k = (k + 1) % counts.length) counts[k]++;
   const out = new Float32Array(m * 3);
   let i = 0;
-  parts.forEach((p, k) => {
-    for (let j = 0; j < counts[k]; j++, i++) {
-      const q = p.at((j + 0.5) / counts[k], frac(j * PHI + k * 0.137));
+  curves.forEach((f, c) => {
+    const cum = tables[c], len = cum[steps];
+    let k = 0;
+    for (let j = 0; j < counts[c]; j++, i++) {
+      const target = ((j + 0.5) / counts[c]) * len;
+      while (k < steps - 1 && cum[k + 1] < target) k++;
+      const t = (k + (target - cum[k]) / Math.max(1e-9, cum[k + 1] - cum[k])) / steps;
+      const q = f(t);
       out[i * 3] = q[0]; out[i * 3 + 1] = q[1]; out[i * 3 + 2] = q[2];
     }
   });
   return out;
 }
 
+const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
+
 const FIGURES = {
-  sphere(m) {
+  dots(m) {
     const out = new Float32Array(m * 3);
     for (let i = 0; i < m; i++) {
       const y = 1 - ((i + 0.5) / m) * 2, r = Math.sqrt(1 - y * y), th = i * GOLDEN;
@@ -188,60 +140,70 @@ const FIGURES = {
     }
     return out;
   },
-  // Padlock: a box body and a U-shaped shackle.
-  padlock(m) {
-    const by = -0.32, bh = 0.36, sx = 0.3, top = by + bh + 0.22;
-    return sample([
-      ...box([0, by, 0], 0.5, bh, 0.16),
-      part.post(-sx, 0, 0.07, by + bh, top, 1.6),
-      part.post(sx, 0, 0.07, by + bh, top, 1.6),
-      part.arc(0, top, sx, 0.07, 0, Math.PI, 1.6),
-    ], m);
-  },
-  // Studio microphone: a rounded capsule held in a U yoke, on a stem and a round base.
-  microphone(m) {
-    const r = 0.24, y0 = 0.05, y1 = 0.55, yoke = 0.34, foot = -0.82;
-    return sample([
-      part.frustum(r, y0, r, y1),
-      part.zone(y1, r, 0, r),
-      part.zone(y0, r, -r, 0),
-      part.frustum(r + 0.015, 0.27, r + 0.015, 0.33, 2),          // band around the capsule
-      part.arc(0, 0.22, yoke, 0.03, Math.PI * 1.05, Math.PI * 1.95, 2),
-      part.post(0, 0, 0.035, foot, 0.22 - yoke, 2),
-      part.frustum(0.36, foot, 0.36, foot - 0.06),
-      part.frustum(0, foot, 0.36, foot),
-    ], m);
-  },
-  // Gear: a thick toothed wheel facing you, with a hole in the middle.
-  gear(m) {
-    const ro = 0.58, ri = 0.2, h = 0.11, teeth = 10, tl = 0.18, tw = 0.1;
-    const parts = [
-      faceZ(part.frustum(ri, h, ro, h)), faceZ(part.frustum(ri, -h, ro, -h)),
-      faceZ(part.frustum(ro, -h, ro, h)), faceZ(part.frustum(ri, -h, ri, h)),
-    ];
-    for (let k = 0; k < teeth; k++) {
-      const a = (k / teeth) * TAU;
-      parts.push(...box([Math.cos(a) * (ro + tl / 2), Math.sin(a) * (ro + tl / 2), 0], tl / 2, tw, h, a, 1, ['-x']));
+  parallels(m) {
+    const { rings, maxLatDeg } = SPHERE.parallels, curves = [];
+    for (let k = 0; k < rings; k++) {
+      const lat = (-maxLatDeg + (2 * maxLatDeg * k) / (rings - 1)) * Math.PI / 180;
+      const y = Math.sin(lat), r = Math.cos(lat), off = k * 0.37;
+      curves.push((t) => [r * Math.cos(TAU * (t + off)), y, r * Math.sin(TAU * (t + off))]);
     }
-    return sample(parts, m);
+    return alongCurves(curves, m);
   },
-  // Rocket: a body tube, a nose cone, a round window, a nozzle and three fins.
-  rocket(m) {
-    const r = 0.25, y0 = -0.42, y1 = 0.3, nose = 0.86, win = 0.09;
-    const window = part.arc(0, 0.08, win, 0.025, 0, TAU, 2.5);
-    const parts = [
-      part.frustum(r, y0, r, y1),
-      part.frustum(r, y1, 0, nose),
-      part.frustum(0.13, y0 - 0.2, 0.19, y0, 2.2),
-      part.frustum(0, y0, r, y0, 0.8),
-      { area: window.area, at(a, b) { const q = window.at(a, b); return [q[0], q[1], q[2] + r + 0.01]; } },
-    ];
-    for (let k = 0; k < 3; k++) {
-      const a = (k / 3) * TAU + Math.PI / 2, c = Math.cos(a), s = Math.sin(a);
-      const at = (rad, y) => [rad * c, y, rad * s];
-      parts.push(part.tri(at(r, y0 + 0.34), at(r, y0 - 0.02), at(r + 0.3, y0 - 0.2), 2.4));
+  meridians(m) {
+    const { lines, maxLatDeg } = SPHERE.meridians, top = maxLatDeg * Math.PI / 180, curves = [];
+    for (let k = 0; k < lines; k++) {
+      const lon = (k / lines) * TAU;
+      curves.push((t) => { const lat = -top + 2 * top * t, r = Math.cos(lat); return [r * Math.cos(lon), Math.sin(lat), r * Math.sin(lon)]; });
     }
-    return sample(parts, m);
+    return alongCurves(curves, m);
+  },
+  geodesic(m) {
+    // Icosahedron, each face split `frequency` times, edges bent onto the sphere
+    const g = (1 + Math.sqrt(5)) / 2;
+    const V = [[-1, g, 0], [1, g, 0], [-1, -g, 0], [1, -g, 0], [0, -1, g], [0, 1, g], [0, -1, -g], [0, 1, -g],
+      [g, 0, -1], [g, 0, 1], [-g, 0, -1], [-g, 0, 1]].map(norm);
+    const F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6],
+      [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+    const n = SPHERE.geodesic.frequency, seen = new Set(), curves = [];
+    const key = (p) => p.map((v) => v.toFixed(4)).join(',');
+    for (const [a, b, c] of F) {
+      // grid points of the face: P(i, j) = a + (b - a) i/n + (c - a) j/n
+      const P = (i, j) => [0, 1, 2].map((d) => V[a][d] + (V[b][d] - V[a][d]) * i / n + (V[c][d] - V[a][d]) * j / n);
+      for (let i = 0; i <= n; i++) for (let j = 0; i + j <= n; j++) {
+        for (const [di, dj] of [[1, 0], [0, 1], [-1, 1]]) {
+          const i2 = i + di, j2 = j + dj;
+          if (i2 < 0 || j2 < 0 || i2 + j2 > n) continue;
+          const p = P(i, j), q = P(i2, j2), id = [key(norm(p)), key(norm(q))].sort().join('|');
+          if (seen.has(id)) continue;
+          seen.add(id);
+          curves.push((t) => norm([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t]));
+        }
+      }
+    }
+    return alongCurves(curves, m);
+  },
+  voxel(m) {
+    // Grid points whose cell the sphere's surface passes through; the spacing is searched so the count fits m
+    const cells = (h) => {
+      const pts = [], k = Math.ceil(1 / h) + 1;
+      for (let x = -k; x <= k; x++) for (let y = -k; y <= k; y++) for (let z = -k; z <= k; z++) {
+        const d = Math.hypot(x, y, z) * h;
+        if (Math.abs(d - 1) <= h * 0.5) pts.push([x * h, y * h, z * h]);
+      }
+      return pts;
+    };
+    const want = Math.max(1, Math.floor(m / SPHERE.voxel.dotsPerCell));
+    const h0 = Math.sqrt((4 * Math.PI) / want);    // about one cell per h0² of surface
+    let lo = h0 * 0.6, hi = h0 * 1.6, pts = null;
+    for (let it = 0; it < 10; it++) {
+      const mid = (lo + hi) / 2, c = cells(mid);
+      if (c.length >= want) { lo = mid; pts = c; } else hi = mid;
+    }
+    if (!pts) pts = cells(lo);
+    // dots fill the cells round-robin, so every cell gets dotsPerCell (a few get one fewer)
+    const out = new Float32Array(m * 3);
+    for (let i = 0; i < m; i++) { const q = pts[i % pts.length]; out[i * 3] = q[0]; out[i * 3 + 1] = q[1]; out[i * 3 + 2] = q[2]; }
+    return out;
   },
 };
 
@@ -262,7 +224,7 @@ export function initSphere(canvas) {
   // Per-dot burst data: outward spread, scatter vector, crumble and rebuild delays
   let BS, BX, BY, BD, BR;
   // Per-figure positions: FX[f], FY[f], FZ[f] for figure f
-  let FX = [], FY = [], FZ = [];
+  let FX = [], FY = [], FZ = [], nShellNow = 0, prebuildQueued = false;
   // Per-bucket screen positions, rebuilt every frame
   let buf = [], len = [];
 
@@ -320,19 +282,32 @@ export function initSphere(canvas) {
       P[i] = rnd() * TAU;
     }
     // Figure positions: shell dots take each figure's shape, loose dots stay where they are
-    FX = []; FY = []; FZ = [];
-    for (const name of SPHERE.figures) {
-      const fx = new Float32Array(n), fy = new Float32Array(n), fz = new Float32Array(n);
-      const pts = FIGURES[name](nShell);
-      for (let i = 0; i < n; i++) {
-        if (i < nShell) { fx[i] = pts[i * 3]; fy[i] = pts[i * 3 + 1]; fz[i] = pts[i * 3 + 2]; }
-        else { fx[i] = X[i]; fy[i] = Y[i]; fz[i] = Z[i]; }
-      }
-      FX.push(fx); FY.push(fy); FZ.push(fz);
-    }
+    // Only the first is built now; the others are built in idle time just before they are needed.
+    FX = []; FY = []; FZ = []; nShellNow = nShell;
+    ensureFigure(0);
     buf = kinds.map((k) => k.alpha.map(() => new Float32Array(n * 2)));
     len = kinds.map((k) => k.alpha.map(() => 0));
     fullClear = true;
+  }
+
+  function ensureFigure(f) {
+    if (FX[f]) return;
+    const fx = new Float32Array(n), fy = new Float32Array(n), fz = new Float32Array(n);
+    const pts = FIGURES[SPHERE.figures[f]](nShellNow);
+    for (let i = 0; i < n; i++) {
+      if (i < nShellNow) { fx[i] = pts[i * 3]; fy[i] = pts[i * 3 + 1]; fz[i] = pts[i * 3 + 2]; }
+      else { fx[i] = X[i]; fy[i] = Y[i]; fz[i] = Z[i]; }
+    }
+    FX[f] = fx; FY[f] = fy; FZ[f] = fz;
+  }
+
+  // Build the next figure while the current one holds, in idle time where the browser offers it.
+  function prebuild(f) {
+    if (FX[f] || prebuildQueued) return;
+    prebuildQueued = true;
+    const run = () => { prebuildQueued = false; ensureFigure(f); };
+    if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 3000 });
+    else setTimeout(run, 200);
   }
 
   function ladder() { return phone ? SPHERE.ladderPhone : SPHERE.ladderDesktop; }
@@ -391,18 +366,16 @@ export function initSphere(canvas) {
     const next = (fig + 1) % SPHERE.figures.length;
     const morph = u < 0 ? 0
       : easeInOutCubic(Math.min(1, Math.max(0, (u - SPHERE.burstMs * 0.5) / (reformAt - SPHERE.burstMs * 0.5))));
-    const ax = FX[fig], ay = FY[fig], az = FZ[fig], bx = FX[next], by = FY[next], bz = FZ[next];
+    ensureFigure(fig);
+    if (u < 0) { if (assembled && !reduced) prebuild(next); } else ensureFigure(next);
+    const ax = FX[fig], ay = FY[fig], az = FZ[fig], bx = FX[next] || ax, by = FY[next] || ay, bz = FZ[next] || az;
     const sink = bursting
       ? SPHERE.burstSink * radius * Math.min(1, Math.max(0, (u - SPHERE.burstMs - SPHERE.burstDelayMaxMs) / SPHERE.hangMs))
       : 0;
 
-    const ang = SPHERE.swayDeg * Math.PI / 180 * Math.sin((simTime / SPHERE.swayMs) * TAU);
+    const ang = (simTime / SPHERE.revolutionMs) * TAU;
     const ca = Math.cos(ang), sa = Math.sin(ang);
-    // The sphere leans; the objects stand nearly upright. The lean changes with the morph.
-    const lean = (f, sphereDeg, objectDeg) => (SPHERE.figures[f] === 'sphere' ? sphereDeg : objectDeg);
-    const tzDeg = lean(fig, SPHERE.tiltZDeg, SPHERE.objectTiltZDeg) * (1 - morph) + lean(next, SPHERE.tiltZDeg, SPHERE.objectTiltZDeg) * morph;
-    const txDeg = lean(fig, SPHERE.tiltXDeg, SPHERE.objectTiltXDeg) * (1 - morph) + lean(next, SPHERE.tiltXDeg, SPHERE.objectTiltXDeg) * morph;
-    const tz = tzDeg * Math.PI / 180, tx = txDeg * Math.PI / 180;
+    const tz = SPHERE.tiltZDeg * Math.PI / 180, tx = SPHERE.tiltXDeg * Math.PI / 180;
     const cz = Math.cos(tz), sz = Math.sin(tz), cxr = Math.cos(tx), sxr = Math.sin(tx);
     const wob = (simTime / SPHERE.looseWobbleMs) * TAU;
     const persp = SPHERE.perspective;
