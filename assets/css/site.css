@@ -78,7 +78,10 @@
   --container: 1360px;
   --gutter: clamp(1.25rem, 0.693rem + 2.286vw, 2.75rem);
   --grid-gap: 16px;
-  --section-pad: clamp(4.5rem, 2.829rem + 6.857vw, 9rem);
+  --section-pad: clamp(5rem, 3.143rem + 7.619vw, 10rem);   /* space above each section: 80 → 160 */
+  --card-gap: 24px;                     /* between project cards */
+  --mark-off: calc(var(--card-gap) / 2);  /* crosshair distance from a card corner: half the gap, so neighbours share marks */
+  --split-top: 40px;                    /* wide screens: content beside a section title starts level with its cap height */
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 16px;
@@ -254,6 +257,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   font: 400 var(--fs-caption) / 1.5 var(--font-mono);
   letter-spacing: var(--track-caption);
   text-transform: uppercase;
+  text-wrap: balance;                   /* no closing bracket alone on the last line */
   color: var(--accent);
 }
 
@@ -626,7 +630,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 
 /* ---------- 9. Sections ---------- */
-.section { padding-block: var(--section-pad); }
+.section { padding-top: var(--section-pad); }   /* one gap between sections, not two stacked paddings */
 .section--flush { padding-top: 0; }
 .section__title {
   margin-top: 32px;
@@ -634,7 +638,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   letter-spacing: var(--track-h2);
   text-wrap: balance;
 }
-.section__title--sub { margin-top: var(--section-pad); }
+.section__title--sub { margin-top: calc(var(--section-pad) * .6); }
 
 /* Fade-up on entering the viewport (main.js adds .reveal-ready, never with reduced motion) */
 .reveal-ready [data-reveal] {
@@ -646,27 +650,43 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .reveal-ready [data-reveal].is-in { opacity: 1; transform: none; }
 
+/* Wide screens: the section title sits on the left and its content starts at column 6,
+   the same line the about text and the leadership rows use */
+@media (min-width: 1200px) {
+  :is(#projects, #skills, #contact) > .container {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--grid-gap);
+    align-items: start;
+  }
+  :is(#projects, #skills, #contact) > .container > * { grid-column: 1 / -1; }
+  :is(#projects, #skills, #contact) > .container > .section__title { grid-column: 1 / span 5; }
+  :is(#projects, #skills, #contact) > .container > :is(.term, .ls, .edu, .contact) { grid-column: 6 / -1; }
+  :is(#projects, #skills, #contact) > .container > :is(.term, .ls, .contact) { margin-top: var(--split-top); }
+}
+
 /* Registration crosshairs around a card: one pseudo-element, eight 1px gradients,
-   centered 8px outside each corner diagonally */
+   centered --mark-off outside each corner diagonally. Each corner has its own color
+   variable so neighbouring cards can leave a shared mark to one of them. */
 .has-marks { position: relative; }
 .has-marks::before {
   --c: var(--card-cross);
   --s: var(--cross-size);
   --m: calc((var(--cross-size) - 1px) / 2);
-  --o: calc(-8px - var(--cross-size) / 2);
+  --o: calc(-1 * var(--mark-off) - var(--cross-size) / 2);
   content: "";
   position: absolute;
   inset: var(--o);
   pointer-events: none;
   background:
-    linear-gradient(var(--c), var(--c)) left 0 top var(--m) / var(--s) 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) left var(--m) top 0 / 1px var(--s) no-repeat,
-    linear-gradient(var(--c), var(--c)) right 0 top var(--m) / var(--s) 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) right var(--m) top 0 / 1px var(--s) no-repeat,
-    linear-gradient(var(--c), var(--c)) left 0 bottom var(--m) / var(--s) 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) left var(--m) bottom 0 / 1px var(--s) no-repeat,
-    linear-gradient(var(--c), var(--c)) right 0 bottom var(--m) / var(--s) 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) right var(--m) bottom 0 / 1px var(--s) no-repeat;
+    linear-gradient(var(--c-tl, var(--c)), var(--c-tl, var(--c))) left 0 top var(--m) / var(--s) 1px no-repeat,
+    linear-gradient(var(--c-tl, var(--c)), var(--c-tl, var(--c))) left var(--m) top 0 / 1px var(--s) no-repeat,
+    linear-gradient(var(--c-tr, var(--c)), var(--c-tr, var(--c))) right 0 top var(--m) / var(--s) 1px no-repeat,
+    linear-gradient(var(--c-tr, var(--c)), var(--c-tr, var(--c))) right var(--m) top 0 / 1px var(--s) no-repeat,
+    linear-gradient(var(--c-bl, var(--c)), var(--c-bl, var(--c))) left 0 bottom var(--m) / var(--s) 1px no-repeat,
+    linear-gradient(var(--c-bl, var(--c)), var(--c-bl, var(--c))) left var(--m) bottom 0 / 1px var(--s) no-repeat,
+    linear-gradient(var(--c-br, var(--c)), var(--c-br, var(--c))) right 0 bottom var(--m) / var(--s) 1px no-repeat,
+    linear-gradient(var(--c-br, var(--c)), var(--c-br, var(--c))) right var(--m) bottom 0 / 1px var(--s) no-repeat;
 }
 
 /* Media slot: poster image over a lazy video; the poster fades out once the video plays */
@@ -703,8 +723,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .term__row {
   display: grid;
   grid-template-columns: 4ch 1fr auto;
-  align-items: center;
-  min-height: 44px;
+  align-items: baseline;                /* the number stays on the first line when a row wraps */
+  align-content: center;
+  min-height: 44px;                     /* touch target */
   padding: 6px 8px;
   border-radius: var(--r-sm);
   color: var(--text);
@@ -738,17 +759,18 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .term__rows > li.is-shown { opacity: 1 !important; }
 @media (min-width: 900px) {
   .term { padding: 24px 24px; }
+  .term__row { min-height: 36px; padding-block: 4px; }
 }
 
 /* --- Project cards --- */
 .projects {
   display: grid;
-  gap: 32px var(--grid-gap);
+  gap: var(--card-gap);
   margin-top: 48px;
 }
 .project {
   display: grid;
-  align-content: start;
+  grid-template-rows: auto 1fr;
   padding: 8px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -757,11 +779,15 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .project:hover { border-color: var(--line-strong); }
 .project__body {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   padding: 20px 12px 16px;
 }
+.project__body > .placeholder { align-self: flex-start; justify-self: start; }
+.project__body > .tech { margin-top: auto; }   /* tech and link sit at the bottom, level across cards in a row */
+/* a card below another one leaves the shared top marks to its neighbour */
+.project + .project { --c-tl: transparent; --c-tr: transparent; }
 .project__title {
   font: 400 var(--fs-h3) / 1.15 var(--font-sans);
   letter-spacing: -0.02em;
@@ -777,7 +803,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   width: 6px; height: 1px;
   background: var(--muted);
 }
-.project__text .placeholder { vertical-align: 1px; }
+.project__text .placeholder, .about__text p + p .placeholder { margin-top: 6px; vertical-align: 1px; }
 
 .stats {
   display: grid;
@@ -785,7 +811,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   padding-block: 16px;
   border-block: 1px solid var(--line);
 }
-.stats__row { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 24px; margin: 0; }
+.stats__row { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 24px 40px; margin: 0; }
 .stats__item { display: flex; flex-direction: column-reverse; gap: 4px; }
 .stats__item dd {
   margin: 0;
@@ -793,7 +819,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
-.stats__item dt { line-height: 1.3; }
+.stats__item dt { line-height: 1.3; white-space: nowrap; }
 .stats .placeholder { justify-self: start; }
 
 .tech {
@@ -805,26 +831,62 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 
 @media (max-width: 599px) {
-  .stats__row { grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+  /* phones: one benchmark per row, label left and number right */
+  .stats { gap: 8px; padding-bottom: 12px; }
+  .stats__row { grid-template-columns: 1fr; gap: 0; }
+  .stats__item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding-block: 10px;
+  }
+  .stats__item + .stats__item { border-top: 1px solid var(--line); }
+  .stats .placeholder { margin-top: 4px; }
 }
 @media (min-width: 900px) {
-  .projects { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--grid-gap); }
-  .project--wide {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: var(--grid-gap);
-  }
-  .project--wide .project__media { grid-column: span 7; align-self: start; }
-  .project--wide .project__body { grid-column: span 5; padding: 16px 16px 16px 8px; }
-  .project--main { grid-column: span 7; }
-  .project--side { grid-column: span 5; }
+  .projects { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .project--wide { grid-column: 1 / -1; }
+  /* equal halves: both videos get the same height, so the two titles start on one line */
+  .project--main, .project--side { grid-column: span 6; }
   .project__body { padding: 24px 16px 16px; }
+  /* shared marks: the junction between the two cards belongs to the left one */
+  .project--main { --c-tr: var(--c); }
+  .project--side { --c-bl: transparent; }
+}
+@media (min-width: 1200px) {
+  /* Synthia: video with the benchmarks under it on the left, the write-up on the right.
+     The body's children join the card grid. Row 6 is flexible, so it takes up the slack
+     when the video is taller than the text; when the text is taller the video grows
+     (object-fit: cover) instead of leaving a hole. Tech and link line up with the benchmarks. */
+  .project--wide {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: repeat(5, auto) 1fr auto auto;
+    gap: 16px var(--grid-gap);
+  }
+  .project--wide .project__body { display: contents; }
+  .project--wide .project__body > * { grid-column: 8 / -1; margin-right: 16px; }
+  /* 16:9 is the minimum here, not a fixed ratio: the ::before holds the height open
+     and the box may stretch taller (with aspect-ratio it would grow wider instead) */
+  .project--wide .project__media { grid-column: 1 / span 7; grid-row: 1 / span 6; align-self: stretch; aspect-ratio: auto; }
+  .project--wide .project__media::before { content: ""; display: block; padding-top: 56.25%; }
+  .project--wide .project__meta { margin-top: 16px; }
+  .project--wide .stats {
+    grid-column: 1 / span 7;
+    grid-row: 7 / span 2;
+    margin: 0;
+    padding: 8px 16px 16px;
+    border: 0;
+  }
+  .project--wide .stats__row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--grid-gap); }
+  .project--wide .tech { grid-row: 7; align-self: start; margin-top: 6px; }
+  .project--wide .project__links { grid-row: 8; align-self: end; margin-bottom: 16px; }
 }
 
 /* --- Statement: words go from dim to bright while scrolling --- */
-.statement { padding-bottom: calc(var(--section-pad) * .75); }
+.statement { padding-bottom: calc(var(--section-pad) * .5); }
 .statement__text {
-  max-width: 28ch;
+  max-width: 21em;
   font: 400 var(--fs-statement) / 1.2 var(--font-sans);
   letter-spacing: -0.02em;
   text-wrap: pretty;
@@ -910,11 +972,12 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   .panel__inner {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: var(--grid-gap);
+    align-content: stretch;             /* the single row fills the height: title top left, list bottom right */
     align-items: end;
     min-height: 520px;
     padding: 48px;
   }
-  .panel__title { grid-column: 1 / span 5; align-self: start; }
+  .panel__title { grid-column: 1 / span 6; align-self: start; }
   .panel__list { grid-column: 7 / -1; }
 }
 
@@ -1002,6 +1065,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .contact__email:hover .contact__arrow { transform: translateX(4px); }
 .contact__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 32px; }
+@media (min-width: 1200px) {
+  .contact__email { font-size: clamp(2rem, 2.6vw, 2.75rem); }   /* fits the 7-column measure on one line */
+}
 .btn__icon--ghost { background: var(--surface-2); }
 
 /* Shared mono link row (hero and contact) */
@@ -1010,7 +1076,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 /* ---------- 10. Hex dump and footer ---------- */
 .hexdump {
   overflow: hidden;
-  padding-block: 8px 32px;
+  padding-block: var(--section-pad) 32px;
   user-select: none;
   -webkit-user-select: none;
 }
