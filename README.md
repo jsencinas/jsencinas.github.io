@@ -12,6 +12,7 @@ Single-page portfolio. Plain HTML, CSS and vanilla JavaScript, no build step. Se
 - `assets/fonts/`: self-hosted WOFF2 subsets of Archivo (variable, weights 400 to 500) and Geist Mono (400).
 - `assets/video/`: sample videos and their WebP posters (see below).
 - `.well-known/security.txt`: RFC 9116 contact file.
+- `robots.txt`: allows all crawlers. Lighthouse reports it as "unable to download" because the page's CSP sets `connect-src 'none'`, which blocks Lighthouse's in-page fetch; real crawlers request the file directly and are not affected.
 
 ## Video slots
 
