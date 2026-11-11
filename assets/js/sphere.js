@@ -11,9 +11,12 @@ const SPHERE = {
   phoneBelow: 900,          // hero widths under this use the phone layout and counts
 
   // Orientation and motion
-  tiltZDeg: 18,             // axis lean in the screen plane
-  tiltXDeg: 14,             // axis lean toward the viewer (0 = none)
-  revolutionMs: 90000,      // one full turn
+  tiltZDeg: 18,             // sphere: axis lean in the screen plane
+  tiltXDeg: 14,             // sphere: axis lean toward the viewer (0 = none)
+  objectTiltZDeg: 6,        // the objects stand nearly upright
+  objectTiltXDeg: 12,
+  swayDeg: 35,              // turns this far left and right of facing you
+  swayMs: 20000,            // one full sway, left and back
   perspective: 0.16,        // 0 = flat; >0 makes front dots spread slightly wider
 
   // Dot counts. The auto-reducer steps down each ladder when frames are slow.
@@ -30,9 +33,9 @@ const SPHERE = {
   accentRGB: [217, 199, 160],
 
   // Depth buckets. `edges` split depth into len(edges)+1 buckets, back to front.
-  shell:     { edges: [-0.6, -0.2, 0.2, 0.6, 0.85], alpha: [0.10, 0.15, 0.24, 0.40, 0.58, 0.72], size: [1.0, 1.0, 1.3, 1.7, 2.0, 2.2] },
+  shell:     { edges: [-0.6, -0.2, 0.2, 0.6, 0.85], alpha: [0.18, 0.26, 0.38, 0.56, 0.74, 0.88], size: [1.1, 1.2, 1.5, 1.8, 2.1, 2.3] },
   loose:     { edges: [0],                    alpha: [0.12, 0.26],                   size: [1.0, 1.3] },
-  champagne: { edges: [-0.2, 0.2, 0.6],       alpha: [0.22, 0.45, 0.70, 0.95],       size: [1.6, 2.0, 2.4, 2.6] },
+  champagne: { edges: [-0.2, 0.2, 0.6],       alpha: [0.32, 0.55, 0.80, 1.00],       size: [1.7, 2.1, 2.5, 2.7] },
 
   // Assemble on load: dots start scattered across the hero at alpha 0.
   assembleMs: 1800,
@@ -52,12 +55,8 @@ const SPHERE = {
   burstDim: 0.35,           // share of alpha lost at full scatter
 
   // Figures: after each burst the dust rebuilds into the next one, then the list repeats.
-  // All fit inside the unit sphere, so they share its size and position.
-  figures: ['sphere', 'torus', 'cube', 'helix', 'atom'],
-  torus: { ring: 0.66, tube: 0.30, tipDeg: 40 },   // tipped so the spin never shows it edge-on
-  cube: { half: 0.6 },
-  helix: { radius: 0.45, height: 0.95, turns: 1.5, rungs: 16, strandShare: 0.55 },
-  atom: { orbit: 0.95, orbitTiltDeg: 70, nucleus: 0.16, nucleusShare: 0.12 }, // three orbits 60° apart
+  // Each object is a few simple surfaces (see FIGURES below), sized to fit the unit sphere.
+  figures: ['sphere', 'padlock', 'microphone', 'gear', 'rocket'],
 
   // Rendering budget
   fps: 30,
@@ -93,58 +92,156 @@ function bucketOf(edges, depth) {
 const PHI = (Math.sqrt(5) - 1) / 2;
 const frac = (v) => v - Math.floor(v);
 
-// Each generator returns the position of shell dot i of m, inside the unit sphere.
+/* ---------- Figure surfaces ----------
+   Every part has an area and a sampler that maps a point (a, b) of the unit square
+   onto its surface. Dots are shared out by area (times an optional density `d`),
+   and each part spreads its dots with a 2D Fibonacci lattice, so coverage is even. */
+const part = {
+  // Surface of revolution between two circles on the Y axis: cylinder, cone or flat ring.
+  frustum(r0, y0, r1, y1, d = 1) {
+    const slant = Math.hypot(r1 - r0, y1 - y0);
+    return { area: Math.PI * (r0 + r1) * slant * d, at(a, b) {
+      const t = r0 === r1 ? a : (Math.sqrt(r0 * r0 + a * (r1 * r1 - r0 * r0)) - r0) / (r1 - r0);
+      const r = r0 + (r1 - r0) * t, th = TAU * b;
+      return [r * Math.cos(th), y0 + (y1 - y0) * t, r * Math.sin(th)];
+    } };
+  },
+  // Band of a sphere centered at (0, cy, 0), between heights y0 and y1 relative to the center.
+  zone(cy, R, y0, y1, d = 1) {
+    return { area: TAU * R * (y1 - y0) * d, at(a, b) {
+      const y = y0 + (y1 - y0) * a, r = Math.sqrt(Math.max(0, R * R - y * y)), th = TAU * b;
+      return [r * Math.cos(th), cy + y, r * Math.sin(th)];
+    } };
+  },
+  // Parallelogram from corner o along edges u and v.
+  rect(o, u, v, d = 1) {
+    const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    return { area: Math.hypot(c[0], c[1], c[2]) * d, at(a, b) {
+      return [o[0] + a * u[0] + b * v[0], o[1] + a * u[1] + b * v[1], o[2] + a * u[2] + b * v[2]];
+    } };
+  },
+  // Triangle p0, p1, p2.
+  tri(p0, p1, p2, d = 1) {
+    const u = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]], v = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
+    const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    return { area: Math.hypot(c[0], c[1], c[2]) / 2 * d, at(a, b) {
+      if (a + b > 1) { a = 1 - a; b = 1 - b; }
+      return [p0[0] + a * u[0] + b * v[0], p0[1] + a * u[1] + b * v[1], p0[2] + a * u[2] + b * v[2]];
+    } };
+  },
+  // Tube of radius `tube` along a circular arc in the XY plane (center cx, cy, radius R, angles t0..t1).
+  arc(cx, cy, R, tube, t0, t1, d = 1) {
+    return { area: TAU * tube * R * Math.abs(t1 - t0) * d, at(a, b) {
+      const t = t0 + (t1 - t0) * a, ps = TAU * b, nx = Math.cos(t), ny = Math.sin(t);
+      const w = R + tube * Math.cos(ps);
+      return [cx + w * nx, cy + w * ny, tube * Math.sin(ps)];
+    } };
+  },
+  // Straight tube between two points on the Y axis at (x, z), as a cylinder.
+  post(x, z, r, y0, y1, d = 1) {
+    const f = part.frustum(r, y0, r, y1, d);
+    return { area: f.area, at(a, b) { const q = f.at(a, b); return [q[0] + x, q[1], q[2] + z]; } };
+  },
+};
+
+// Box with half sizes hx, hy, hz centered at c, turned by `rot` around the Z axis.
+function box(c, hx, hy, hz, rot = 0, d = 1, skip = []) {
+  const cs = Math.cos(rot), sn = Math.sin(rot);
+  const tf = (q) => [c[0] + q[0] * cs - q[1] * sn, c[1] + q[0] * sn + q[1] * cs, c[2] + q[2]];
+  const faces = {
+    '+x': [[hx, -hy, -hz], [0, 2 * hy, 0], [0, 0, 2 * hz]], '-x': [[-hx, -hy, -hz], [0, 2 * hy, 0], [0, 0, 2 * hz]],
+    '+y': [[-hx, hy, -hz], [2 * hx, 0, 0], [0, 0, 2 * hz]], '-y': [[-hx, -hy, -hz], [2 * hx, 0, 0], [0, 0, 2 * hz]],
+    '+z': [[-hx, -hy, hz], [2 * hx, 0, 0], [0, 2 * hy, 0]], '-z': [[-hx, -hy, -hz], [2 * hx, 0, 0], [0, 2 * hy, 0]],
+  };
+  return Object.entries(faces).filter(([k]) => !skip.includes(k)).map(([, [o, u, v]]) => {
+    const r = part.rect(o, u, v, d);
+    return { area: r.area, at(a, b) { return tf(r.at(a, b)); } };
+  });
+}
+
+// Turn a surface whose axis is Y so that its axis points at the viewer (Z).
+const faceZ = (p) => ({ area: p.area, at(a, b) { const q = p.at(a, b); return [q[0], q[2], q[1]]; } });
+
+// Share m dots across the parts by weighted area and sample each part.
+function sample(parts, m) {
+  const total = parts.reduce((s, p) => s + p.area, 0);
+  const counts = parts.map((p) => Math.floor((p.area / total) * m));
+  let left = m - counts.reduce((s, c) => s + c, 0);
+  for (let k = 0; left > 0; k = (k + 1) % parts.length, left--) counts[k]++;
+  const out = new Float32Array(m * 3);
+  let i = 0;
+  parts.forEach((p, k) => {
+    for (let j = 0; j < counts[k]; j++, i++) {
+      const q = p.at((j + 0.5) / counts[k], frac(j * PHI + k * 0.137));
+      out[i * 3] = q[0]; out[i * 3 + 1] = q[1]; out[i * 3 + 2] = q[2];
+    }
+  });
+  return out;
+}
+
 const FIGURES = {
-  sphere(i, m) {
-    const y = 1 - ((i + 0.5) / m) * 2, r = Math.sqrt(1 - y * y), th = i * GOLDEN;
-    return [Math.cos(th) * r, y, Math.sin(th) * r];
-  },
-  torus(i, m) {
-    const { ring, tube } = SPHERE.torus;
-    const u = TAU * (i + 0.5) / m, v = TAU * frac(i * PHI * 37);
-    const w = ring + tube * Math.cos(v);
-    const x = w * Math.cos(u), y = w * Math.sin(u), z = tube * Math.sin(v);
-    const a = SPHERE.torus.tipDeg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
-    return [x, y * ca - z * sa, y * sa + z * ca];
-  },
-  cube(i, m) {
-    const h = SPHERE.cube.half, per = Math.ceil(m / 6), g = Math.ceil(Math.sqrt(per));
-    const rows = Math.ceil(per / g), j = Math.floor(i / 6);
-    const a = (((j % g) + 0.5) / g * 2 - 1) * h, b = ((Math.floor(j / g) + 0.5) / rows * 2 - 1) * h;
-    switch (i % 6) {
-      case 0: return [h, a, b];
-      case 1: return [-h, a, b];
-      case 2: return [a, h, b];
-      case 3: return [a, -h, b];
-      case 4: return [a, b, h];
-      default: return [a, b, -h];
+  sphere(m) {
+    const out = new Float32Array(m * 3);
+    for (let i = 0; i < m; i++) {
+      const y = 1 - ((i + 0.5) / m) * 2, r = Math.sqrt(1 - y * y), th = i * GOLDEN;
+      out[i * 3] = Math.cos(th) * r; out[i * 3 + 1] = y; out[i * 3 + 2] = Math.sin(th) * r;
     }
+    return out;
   },
-  helix(i, m) {
-    const { radius, height, turns, rungs, strandShare } = SPHERE.helix;
-    const perStrand = Math.floor((m * strandShare) / 2);
-    if (i < perStrand * 2) {
-      const t = (Math.floor(i / 2) + 0.5) / perStrand;
-      const a = t * turns * TAU + (i % 2) * Math.PI;
-      return [radius * Math.cos(a), height * (t * 2 - 1), radius * Math.sin(a)];
-    }
-    const k = i - perStrand * 2, rest = m - perStrand * 2, perRung = Math.max(1, Math.floor(rest / rungs));
-    const q = k % rungs, t = (q + 0.5) / rungs, w = ((Math.floor(k / rungs) % perRung) + 0.5) / perRung * 2 - 1;
-    const a = t * turns * TAU;
-    return [radius * Math.cos(a) * w, height * (t * 2 - 1), radius * Math.sin(a) * w];
+  // Padlock: a box body and a U-shaped shackle.
+  padlock(m) {
+    const by = -0.32, bh = 0.36, sx = 0.3, top = by + bh + 0.22;
+    return sample([
+      ...box([0, by, 0], 0.5, bh, 0.16),
+      part.post(-sx, 0, 0.07, by + bh, top, 1.6),
+      part.post(sx, 0, 0.07, by + bh, top, 1.6),
+      part.arc(0, top, sx, 0.07, 0, Math.PI, 1.6),
+    ], m);
   },
-  atom(i, m) {
-    const { orbit, orbitTiltDeg, nucleus, nucleusShare } = SPHERE.atom;
-    const core = Math.round(m * nucleusShare);
-    if (i < core) {
-      const q = FIGURES.sphere(i, core);
-      return [q[0] * nucleus, q[1] * nucleus, q[2] * nucleus];
+  // Studio microphone: a rounded capsule held in a U yoke, on a stem and a round base.
+  microphone(m) {
+    const r = 0.24, y0 = 0.05, y1 = 0.55, yoke = 0.34, foot = -0.82;
+    return sample([
+      part.frustum(r, y0, r, y1),
+      part.zone(y1, r, 0, r),
+      part.zone(y0, r, -r, 0),
+      part.frustum(r + 0.015, 0.27, r + 0.015, 0.33, 2),          // band around the capsule
+      part.arc(0, 0.22, yoke, 0.03, Math.PI * 1.05, Math.PI * 1.95, 2),
+      part.post(0, 0, 0.035, foot, 0.22 - yoke, 2),
+      part.frustum(0.36, foot, 0.36, foot - 0.06),
+      part.frustum(0, foot, 0.36, foot),
+    ], m);
+  },
+  // Gear: a thick toothed wheel facing you, with a hole in the middle.
+  gear(m) {
+    const ro = 0.58, ri = 0.2, h = 0.11, teeth = 10, tl = 0.18, tw = 0.1;
+    const parts = [
+      faceZ(part.frustum(ri, h, ro, h)), faceZ(part.frustum(ri, -h, ro, -h)),
+      faceZ(part.frustum(ro, -h, ro, h)), faceZ(part.frustum(ri, -h, ri, h)),
+    ];
+    for (let k = 0; k < teeth; k++) {
+      const a = (k / teeth) * TAU;
+      parts.push(...box([Math.cos(a) * (ro + tl / 2), Math.sin(a) * (ro + tl / 2), 0], tl / 2, tw, h, a, 1, ['-x']));
     }
-    const k = i - core, rings = 3, per = Math.ceil((m - core) / rings);
-    const u = TAU * (Math.floor(k / rings) + 0.5) / per, b = (k % rings) * Math.PI / 3;
-    const t = orbitTiltDeg * Math.PI / 180;
-    const x = orbit * Math.cos(u), y = -orbit * Math.sin(u) * Math.sin(t), z = orbit * Math.sin(u) * Math.cos(t);
-    return [x * Math.cos(b) + z * Math.sin(b), y, -x * Math.sin(b) + z * Math.cos(b)];
+    return sample(parts, m);
+  },
+  // Rocket: a body tube, a nose cone, a round window, a nozzle and three fins.
+  rocket(m) {
+    const r = 0.25, y0 = -0.42, y1 = 0.3, nose = 0.86, win = 0.09;
+    const window = part.arc(0, 0.08, win, 0.025, 0, TAU, 2.5);
+    const parts = [
+      part.frustum(r, y0, r, y1),
+      part.frustum(r, y1, 0, nose),
+      part.frustum(0.13, y0 - 0.2, 0.19, y0, 2.2),
+      part.frustum(0, y0, r, y0, 0.8),
+      { area: window.area, at(a, b) { const q = window.at(a, b); return [q[0], q[1], q[2] + r + 0.01]; } },
+    ];
+    for (let k = 0; k < 3; k++) {
+      const a = (k / 3) * TAU + Math.PI / 2, c = Math.cos(a), s = Math.sin(a);
+      const at = (rad, y) => [rad * c, y, rad * s];
+      parts.push(part.tri(at(r, y0 + 0.34), at(r, y0 - 0.02), at(r + 0.3, y0 - 0.2), 2.4));
+    }
+    return sample(parts, m);
   },
 };
 
@@ -226,8 +323,9 @@ export function initSphere(canvas) {
     FX = []; FY = []; FZ = [];
     for (const name of SPHERE.figures) {
       const fx = new Float32Array(n), fy = new Float32Array(n), fz = new Float32Array(n);
+      const pts = FIGURES[name](nShell);
       for (let i = 0; i < n; i++) {
-        if (i < nShell) { const q = FIGURES[name](i, nShell); fx[i] = q[0]; fy[i] = q[1]; fz[i] = q[2]; }
+        if (i < nShell) { fx[i] = pts[i * 3]; fy[i] = pts[i * 3 + 1]; fz[i] = pts[i * 3 + 2]; }
         else { fx[i] = X[i]; fy[i] = Y[i]; fz[i] = Z[i]; }
       }
       FX.push(fx); FY.push(fy); FZ.push(fz);
@@ -298,9 +396,13 @@ export function initSphere(canvas) {
       ? SPHERE.burstSink * radius * Math.min(1, Math.max(0, (u - SPHERE.burstMs - SPHERE.burstDelayMaxMs) / SPHERE.hangMs))
       : 0;
 
-    const ang = (simTime / SPHERE.revolutionMs) * TAU;
+    const ang = SPHERE.swayDeg * Math.PI / 180 * Math.sin((simTime / SPHERE.swayMs) * TAU);
     const ca = Math.cos(ang), sa = Math.sin(ang);
-    const tz = SPHERE.tiltZDeg * Math.PI / 180, tx = SPHERE.tiltXDeg * Math.PI / 180;
+    // The sphere leans; the objects stand nearly upright. The lean changes with the morph.
+    const lean = (f, sphereDeg, objectDeg) => (SPHERE.figures[f] === 'sphere' ? sphereDeg : objectDeg);
+    const tzDeg = lean(fig, SPHERE.tiltZDeg, SPHERE.objectTiltZDeg) * (1 - morph) + lean(next, SPHERE.tiltZDeg, SPHERE.objectTiltZDeg) * morph;
+    const txDeg = lean(fig, SPHERE.tiltXDeg, SPHERE.objectTiltXDeg) * (1 - morph) + lean(next, SPHERE.tiltXDeg, SPHERE.objectTiltXDeg) * morph;
+    const tz = tzDeg * Math.PI / 180, tx = txDeg * Math.PI / 180;
     const cz = Math.cos(tz), sz = Math.sin(tz), cxr = Math.cos(tx), sxr = Math.sin(tx);
     const wob = (simTime / SPHERE.looseWobbleMs) * TAU;
     const persp = SPHERE.perspective;
