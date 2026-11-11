@@ -733,6 +733,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   transition: background-color var(--t-fast) var(--ease-out);
 }
 .term__desc { color: var(--muted); }
+@media (max-width: 479px) {
+  .term__desc { display: block; }   /* phones: name on line 1, description on line 2, never split mid-phrase */
+}
 .term__go {
   margin-left: 16px;
   color: var(--accent);
@@ -793,6 +796,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
+.project__meta { text-wrap: balance; }
 .project__text, .project__notes { color: var(--text-2); max-width: 62ch; text-wrap: pretty; }
 .project__notes { display: grid; gap: 6px; }
 .project__notes li { position: relative; padding-left: 18px; }
@@ -997,6 +1001,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
+@media (max-width: 599px) {
+  .about__photo { max-width: none; aspect-ratio: 1 / 1; }   /* gutter to gutter on phones, square */
+}
 .about__text { display: grid; gap: 20px; max-width: 62ch; color: var(--text-2); }
 .about__text p:nth-child(2) { color: var(--text); font-size: var(--fs-lead); line-height: 1.5; }
 @media (min-width: 900px) {
@@ -1038,15 +1045,13 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   .ls__group + .ls__group { margin-top: 4px; }
 }
 .edu { margin-top: 24px; color: var(--text-2); max-width: 62ch; }
+.edu__when { display: block; }
 
 /* --- Contact --- */
 .contact { display: grid; gap: 24px; margin-top: 48px; justify-items: start; }
 .contact__lead { color: var(--text-2); font-size: var(--fs-lead); }
 .contact__email {
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0 .4em;
+  display: block;
   font: 400 var(--fs-email) / 1.1 var(--font-sans);
   letter-spacing: -0.025em;
   color: var(--text);
@@ -1059,6 +1064,8 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .contact__email:hover { text-decoration-color: var(--accent); }
 .contact__arrow {
+  display: inline-block;   /* keeps the arrow out of the link's underline */
+  margin-left: .3em;
   color: var(--accent);
   font-size: .7em;
   transition: transform var(--t-fast) var(--ease-out);
