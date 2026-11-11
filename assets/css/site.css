@@ -126,6 +126,8 @@
   --intro-wipe-dur: 900ms;
   --intro-wipe-stagger: 160ms;
   --intro-line-color: var(--line-strong);
+  --intro-fs: 15px;               /* the name row (20px from 900px wide) */
+  --intro-mark: 24px;
   --intro-skip-dur: 150ms;
 
   /* hero */
@@ -156,6 +158,8 @@
 }
 @media (min-width: 900px) {
   :root {
+    --intro-fs: 20px;
+    --intro-mark: 28px;
     --fs-mono: 0.875rem;
     --fs-term: 0.9375rem;
     --grid-gap: 24px;
@@ -463,9 +467,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  padding-inline: calc(var(--nav-inset) + 8px);
-  font: 400 13px / 1 var(--font-sans);
-  letter-spacing: -0.005em;
+  padding-inline: calc(var(--nav-inset) + 4px);
+  font: 400 var(--intro-fs) / 1 var(--font-sans);
+  letter-spacing: -0.01em;
   color: var(--text);
   animation:
     intro-fade-in var(--intro-in-dur) var(--ease-out) var(--intro-in-delay) both,
@@ -474,12 +478,12 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .intro__half {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
   container-type: inline-size;       /* 100cqw = the half's width, used to start each word next to the mark */
 }
-.intro__half--l { padding-right: 14px; }
-.intro__half--r { padding-left: 14px; }
+.intro__half--l { padding-right: 10px; }
+.intro__half--r { padding-left: 10px; }
 .intro__word { flex: none; white-space: nowrap; }
 .intro__rule {
   flex: 1;
@@ -492,12 +496,12 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .intro__half--r .intro__rule { transform-origin: left center; }
 .intro__half--l .intro__word { animation: intro-split-l var(--intro-split-dur) var(--ease-inout) var(--intro-split-delay) both; }
 .intro__half--r .intro__word { animation: intro-split-r var(--intro-split-dur) var(--ease-inout) var(--intro-split-delay) both; }
-.intro__mark { width: 22px; height: 22px; flex: none; }
+.intro__mark { width: var(--intro-mark); height: var(--intro-mark); flex: none; }
 @media (min-width: 900px) {
-  .intro__row { padding-inline: calc(var(--nav-inset) + 20px); font-size: 15px; }
-  .intro__half { gap: 20px; }
-  .intro__half--l { padding-right: 20px; }
-  .intro__half--r { padding-left: 20px; }
+  .intro__row { padding-inline: calc(var(--nav-inset) + 20px); }
+  .intro__half { gap: 24px; }
+  .intro__half--l { padding-right: 24px; }
+  .intro__half--r { padding-left: 24px; }
 }
 
 /* Headline wipe: a bar grows over each name line, the line appears under it, the bar leaves to the right.
