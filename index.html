@@ -19,6 +19,7 @@
   <link rel="preload" href="assets/fonts/geist-mono-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/site.css">
   <link rel="modulepreload" href="assets/js/sphere.js">
+  <link rel="modulepreload" href="assets/js/page.js">
   <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!sessionStorage.getItem('intro-seen')){d.classList.add('intro-on');sessionStorage.setItem('intro-seen','1')}}catch(e){}})();</script>
   <script type="module" src="assets/js/main.js"></script>
 </head>
@@ -89,7 +90,7 @@
             <p class="hero__lead">Computer Science student at Tec de Monterrey. I build real-time AI pipelines and robot control software, and I'm now focusing on cybersecurity.</p>
             <div class="hero__actions">
               <a class="btn btn--primary" href="assets/cv.pdf" download>Download CV <span class="btn__icon" aria-hidden="true">↓</span></a>
-              <ul class="hero__links">
+              <ul class="links hero__links">
                 <li><a class="tlink" href="https://github.com/jsencinas" rel="noopener">GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></li>
                 <li><a class="tlink" href="https://www.linkedin.com/in/jsencinas" rel="noopener">LinkedIn <span class="tlink__arrow" aria-hidden="true">↗</span></a></li>
                 <li><a class="tlink" href="mailto:jesanchezencinas@gmail.com">Email <span class="tlink__arrow" aria-hidden="true">↗</span></a></li>
@@ -106,49 +107,211 @@
       </div>
     </section>
 
-    <!-- Step 5 builds the sections below. They hold structure and anchors only for now. -->
+    <!-- ~/projects: terminal index, then the three project cards -->
     <section class="section" id="projects" aria-labelledby="projects-title">
       <div class="container">
         <p class="path"><span><span class="path__sym">~/</span>projects</span></p>
         <h2 class="section__title" id="projects-title">Projects</h2>
-        <div class="section__body">
-          <article class="stub-card" id="synthia" aria-labelledby="synthia-title">
-            <h3 id="synthia-title">Synthia: real-time AI voice detection</h3>
-            <p class="placeholder">[ Card built in step 5 ]</p>
+
+        <div class="term" data-term data-reveal>
+          <p class="term__line" data-term-line><span class="term__prompt">jorge@gdl:~$</span> <span class="sr-only">ls projects/</span><span class="term__cmd" aria-hidden="true" data-term-cmd>ls projects/</span></p>
+          <ol class="term__rows" aria-label="Project index">
+            <li><a class="term__row" href="#synthia"><span class="term__n">01</span><span class="term__name">Synthia:<span class="term__desc"> real-time AI voice detection</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
+            <li><a class="term__row" href="#first-7102"><span class="term__n">02</span><span class="term__name">FIRST Robotics 7102:<span class="term__desc"> autonomous control</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
+            <li><a class="term__row" href="#arm"><span class="term__n">03</span><span class="term__name">6-DOF robotic arm:<span class="term__desc"> inverse kinematics</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
+          </ol>
+          <p class="term__line term__line--end" aria-hidden="true" data-term-end><span class="term__prompt">jorge@gdl:~$</span> <span class="term__cursor" data-term-cursor></span></p>
+        </div>
+
+        <div class="projects">
+          <article class="project has-marks project--wide" id="synthia" aria-labelledby="synthia-title" data-reveal>
+            <div class="project__media media" data-video="card">
+              <video class="media__video" muted playsinline loop preload="none" width="960" height="540" aria-hidden="true" tabindex="-1">
+                <source src="assets/video/sample-synthia.webm" type="video/webm">
+                <source src="assets/video/sample-synthia.mp4" type="video/mp4">
+              </video>
+              <img class="media__poster" src="assets/video/sample-synthia.webp" width="960" height="540" alt="" loading="lazy" decoding="async">
+            </div>
+            <div class="project__body">
+              <p class="project__meta caption">HackMTY 2026 · Finalist, 4th place · Sep 2026</p>
+              <h3 class="project__title" id="synthia-title">Synthia: real-time AI voice detection</h3>
+              <p class="placeholder">[ PLACEHOLDER: what it detects, in plain language ]</p>
+              <p class="project__text">A real-time detection pipeline with three layers: turn-taking dynamics (51 features), acoustic signal metrics (58 features) and an out-of-fold stacked ensemble of XGBoost and logistic regression.</p>
+              <p class="project__text">Served from a containerized FastAPI endpoint on a Linux server, exposed through Cloudflare Tunnels for continuous uptime and live evaluation. <span class="placeholder">[ PLACEHOLDER: your role on the team ]</span></p>
+              <div class="stats">
+                <p class="caption">Competition benchmarks</p>
+                <dl class="stats__row">
+                  <div class="stats__item"><dt class="caption">ROC-AUC</dt><dd>1.000</dd></div>
+                  <div class="stats__item"><dt class="caption">Balanced accuracy</dt><dd>~98.8%</dd></div>
+                  <div class="stats__item"><dt class="caption">Avg. response latency</dt><dd>1.15 s</dd></div>
+                </dl>
+                <p class="placeholder">[ PLACEHOLDER: how these were evaluated: dataset, split, who ran it ]</p>
+              </div>
+              <ul class="tech" aria-label="Tech used"><li>python</li><li>linux</li><li>cloudflare tunnels</li><li>xgboost</li><li>fastapi</li><li>containers</li></ul>
+              <p class="project__links"><span class="placeholder">[ PLACEHOLDER: demo or repo link ]</span></p>
+            </div>
           </article>
-          <article class="stub-card" id="first-7102" aria-labelledby="first-title">
-            <h3 id="first-title">FIRST Robotics 7102: autonomous control</h3>
-            <p class="placeholder">[ Card built in step 5 ]</p>
+
+          <article class="project has-marks project--main" id="first-7102" aria-labelledby="first-title" data-reveal>
+            <div class="project__media media" data-video="card">
+              <video class="media__video" muted playsinline loop preload="none" width="960" height="540" aria-hidden="true" tabindex="-1">
+                <source src="assets/video/sample-robotics.webm" type="video/webm">
+                <source src="assets/video/sample-robotics.mp4" type="video/mp4">
+              </video>
+              <img class="media__poster" src="assets/video/sample-robotics.webp" width="960" height="540" alt="" loading="lazy" decoding="async">
+            </div>
+            <div class="project__body">
+              <p class="project__meta caption">Team Daedalus 7102 · Apr 2023 – Jun 2025</p>
+              <h3 class="project__title" id="first-title">FIRST Robotics 7102: autonomous control</h3>
+              <p class="project__text">Lead programmer and primary driver. I built the autonomous control systems, led software integration for the competition hardware, and drove the robot in live matches.</p>
+              <ul class="project__notes">
+                <li>Represented the team at the 2024 FIRST World Championship in Houston.</li>
+                <li>Key contributor to the Autonomous Award (2024) and the Innovation in Control Award (2025).</li>
+              </ul>
+              <ul class="tech" aria-label="Tech used"><li>java</li><li>wpilib</li><li>git</li><li>github</li></ul>
+              <p class="project__links"><span class="placeholder">[ PLACEHOLDER: repo or demo link ]</span></p>
+            </div>
           </article>
-          <article class="stub-card" id="arm" aria-labelledby="arm-title">
-            <h3 id="arm-title">6-DOF robotic arm: inverse kinematics</h3>
-            <p class="placeholder">[ Card built in step 5 ]</p>
+
+          <article class="project has-marks project--side" id="arm" aria-labelledby="arm-title" data-reveal>
+            <div class="project__media media" data-video="card">
+              <video class="media__video" muted playsinline loop preload="none" width="960" height="540" aria-hidden="true" tabindex="-1">
+                <source src="assets/video/sample-arm.webm" type="video/webm">
+                <source src="assets/video/sample-arm.mp4" type="video/mp4">
+              </video>
+              <img class="media__poster" src="assets/video/sample-arm.webp" width="960" height="540" alt="" loading="lazy" decoding="async">
+            </div>
+            <div class="project__body">
+              <p class="project__meta caption">May – Aug 2024</p>
+              <h3 class="project__title" id="arm-title">6-DOF robotic arm: inverse kinematics</h3>
+              <p class="project__text">Maps a target (x, y, z) coordinate to joint motor angles, on top of modular object-oriented C++ libraries for joint interpolation and hardware abstraction. <span class="placeholder">[ PLACEHOLDER: your role, or solo project ]</span></p>
+              <ul class="tech" aria-label="Tech used"><li>c++</li><li>arduino</li><li>python</li></ul>
+              <p class="project__links"><span class="placeholder">[ PLACEHOLDER: repo or demo link ]</span></p>
+            </div>
           </article>
         </div>
       </div>
     </section>
 
+    <!-- Statement (draft copy, for Jorge's review) -->
+    <section class="section statement" aria-label="Statement">
+      <div class="container">
+        <p class="statement__text" data-statement>I like software that has to answer right away: a robot with seconds left in a match, a model scoring live audio. Now I want to learn how systems like these hold up when someone tries to break them.</p>
+      </div>
+    </section>
+
+    <!-- Wide video panel -->
+    <section class="section section--flush" aria-labelledby="panel-title">
+      <div class="container">
+        <div class="panel" data-reveal>
+          <div class="panel__media media" data-video="panel">
+            <video class="media__video" muted playsinline loop preload="none" width="1280" height="720" aria-hidden="true" tabindex="-1">
+              <source src="assets/video/sample-panel.webm" type="video/webm">
+              <source src="assets/video/sample-panel.mp4" type="video/mp4">
+            </video>
+            <img class="media__poster" src="assets/video/sample-panel.webp" width="1280" height="720" alt="" loading="lazy" decoding="async">
+          </div>
+          <div class="panel__inner">
+            <h2 class="panel__title" id="panel-title"><span class="panel__l1">Software that</span> <span class="panel__l2">has to keep up.</span></h2>
+            <ul class="panel__list">
+              <li><a class="panel__row" href="#synthia"><span class="panel__item">Real-time AI pipelines</span><span class="panel__meta caption">Synthia</span><span class="arrow" aria-hidden="true">→</span></a></li>
+              <li><a class="panel__row" href="#first-7102"><span class="panel__item">Robot control</span><span class="panel__meta caption">FIRST 7102</span><span class="arrow" aria-hidden="true">→</span></a></li>
+              <li><a class="panel__row" href="#arm"><span class="panel__item">Kinematics and embedded C++</span><span class="panel__meta caption">6-DOF arm</span><span class="arrow" aria-hidden="true">→</span></a></li>
+              <li><a class="panel__row" href="#about"><span class="panel__item">Cybersecurity</span><span class="panel__meta caption">Current focus</span><span class="arrow" aria-hidden="true">→</span></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ~/about, with leadership as its own subsection -->
     <section class="section" id="about" aria-labelledby="about-title">
       <div class="container">
         <p class="path"><span><span class="path__sym">~/</span>about</span></p>
         <h2 class="section__title" id="about-title">About</h2>
+
+        <div class="about">
+          <div class="about__photo" data-reveal>
+            <span class="placeholder">[ PLACEHOLDER: photo ]</span>
+          </div>
+          <div class="about__text" data-reveal>
+            <p><span class="placeholder">[ DRAFT: review this text ]</span></p>
+            <p>I'm Jorge, a Computer Science student at Tec de Monterrey. From 2023 to 2025 I was lead programmer and primary driver for FIRST Robotics team Daedalus 7102: I wrote the autonomous code, then drove the robot in the matches where it had to work.</p>
+            <p>Outside class I lead people as well as code. With Techo Jalisco I run volunteer teams on housing builds, and in 2024 I was Vice President of ConstruyeTec. A build site and a software integration need the same things: a plan, a team that trusts it, and someone who checks the details.</p>
+            <p>I'm now focusing on cybersecurity. <span class="placeholder">[ PLACEHOLDER: what I'm learning or doing in cybersecurity: courses, labs, CTFs, certifications, or leave it out ]</span></p>
+          </div>
+        </div>
+
+        <section class="leadership" aria-labelledby="leadership-title">
+          <h2 class="section__title section__title--sub" id="leadership-title">Leadership and volunteering</h2>
+          <ul class="roles">
+            <li class="role" data-reveal>
+              <p class="role__when caption">Oct 2023 – present</p>
+              <div class="role__body">
+                <h3 class="role__org">Techo Jalisco</h3>
+                <p class="role__title caption">On-site volunteer lead</p>
+                <p class="role__text">Led on-site work on 14 transitional housing units, directing teams of 15 volunteers per build. Took part in two national fundraising campaigns across Jalisco.</p>
+              </div>
+            </li>
+            <li class="role" data-reveal>
+              <p class="role__when caption">2024</p>
+              <div class="role__body">
+                <h3 class="role__org">ConstruyeTec</h3>
+                <p class="role__title caption">Vice President</p>
+                <p class="role__text">Strategic planning, project coordination and campus-wide initiatives.</p>
+              </div>
+            </li>
+          </ul>
+        </section>
       </div>
     </section>
 
+    <!-- ~/skills: a real nested list, styled as a file listing -->
     <section class="section" id="skills" aria-labelledby="skills-title">
       <div class="container">
         <p class="path"><span><span class="path__sym">~/</span>skills</span></p>
         <h2 class="section__title" id="skills-title">Skills</h2>
+        <ul class="ls" data-reveal>
+          <li class="ls__group"><span class="ls__dir">languages<span class="ls__slash" aria-hidden="true">/</span></span>
+            <ul class="ls__items"><li>java</li><li>c</li><li>c++</li><li>python</li><li>sql</li><li>html</li><li>css</li><li>arduino</li></ul></li>
+          <li class="ls__group"><span class="ls__dir">tools<span class="ls__slash" aria-hidden="true">/</span></span>
+            <ul class="ls__items"><li>linux</li><li>zsh</li><li>tmux</li><li>git</li><li>github</li></ul></li>
+          <li class="ls__group"><span class="ls__dir">spoken<span class="ls__slash" aria-hidden="true">/</span></span>
+            <ul class="ls__items"><li>spanish (native)</li><li>english (B2)</li></ul></li>
+        </ul>
+        <p class="edu">B.S. in Computer Science and Technology, Tecnológico de Monterrey. Expected June 2029 · GPA 3.88</p>
       </div>
     </section>
 
+    <!-- ~/contact -->
     <section class="section" id="contact" aria-labelledby="contact-title">
       <div class="container">
         <p class="path"><span><span class="path__sym">~/</span>contact</span></p>
         <h2 class="section__title" id="contact-title">Contact</h2>
+        <div class="contact" data-reveal>
+          <p class="contact__lead">Open to internship opportunities.</p>
+          <a class="contact__email" href="mailto:jesanchezencinas@gmail.com">jesanchezencinas@gmail.com <span class="contact__arrow" aria-hidden="true">→</span></a>
+          <div class="contact__row">
+            <ul class="links">
+              <li><a class="tlink" href="https://www.linkedin.com/in/jsencinas" rel="noopener">LinkedIn <span class="tlink__arrow" aria-hidden="true">↗</span></a></li>
+              <li><a class="tlink" href="https://github.com/jsencinas" rel="noopener">GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></li>
+            </ul>
+            <a class="btn btn--secondary" href="assets/cv.pdf" download>Download CV <span class="btn__icon btn__icon--ghost" aria-hidden="true">↓</span></a>
+          </div>
+        </div>
       </div>
     </section>
   </main>
+
+  <!-- Decorative: xxd dump of the UTF-8 bytes of "Jorge Enrique Sánchez Encinas" (generated, not typed) -->
+  <div class="hexdump container" aria-hidden="true">
+    <pre class="hx hx--wide"><span class="hx__o">00000000:</span> <span class="hx__b">4a6f 7267 6520 456e 7269 7175 6520 53c3</span>  <span class="hx__a">Jorge Enrique S.</span>
+<span class="hx__o">00000010:</span> <span class="hx__b">a16e 6368 657a 2045 6e63 696e 6173     </span>  <span class="hx__a">.nchez Encinas</span></pre>
+    <pre class="hx hx--narrow"><span class="hx__b">4a6f 7267 6520 456e</span>  <span class="hx__a">Jorge En</span>
+<span class="hx__b">7269 7175 6520 53c3</span>  <span class="hx__a">rique S.</span>
+<span class="hx__b">a16e 6368 657a 2045</span>  <span class="hx__a">.nchez E</span>
+<span class="hx__b">6e63 696e 6173     </span>  <span class="hx__a">ncinas</span></pre>
+  </div>
 
   <footer class="footer">
     <div class="container footer__row caption">

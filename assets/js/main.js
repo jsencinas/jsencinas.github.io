@@ -1,8 +1,10 @@
 /* =====================================================================
    main.js: intro, nav menu, caption resolve, clock, console greeting.
    Intro timings come from CSS custom properties (site.css, "intro").
+   Sections below the hero live in page.js.
    ===================================================================== */
 import { initSphere } from './sphere.js';
+import { initPage } from './page.js';
 
 /* ---------- CAPTION RESOLVE CONSTANTS ---------- */
 const RESOLVE = {
@@ -190,6 +192,7 @@ function greet() {
 }
 
 initHero();
+initPage();
 initMenu();
 initClock();
 greet();
