@@ -60,7 +60,7 @@
   --font-sans: "Archivo", "Archivo Fallback", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, Menlo, Consolas, monospace;
   --fs-display:   clamp(2.75rem, 1.636rem + 4.571vw, 5.75rem);
-  --fs-hero-sub:  clamp(1.625rem, 1.207rem + 1.714vw, 2.75rem);
+  --fs-hero-sub:  clamp(1.125rem, 0.986rem + 0.571vw, 1.5rem);
   --fs-h2:        clamp(2rem, 1.443rem + 2.286vw, 3.5rem);
   --fs-statement: clamp(1.625rem, 1.207rem + 1.714vw, 2.75rem);
   --fs-h3:        clamp(1.375rem, 1.189rem + 0.762vw, 1.875rem);
@@ -561,13 +561,13 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   letter-spacing: var(--track-display);
   color: var(--text);
 }
-.hero__l1, .hero__l2 { display: block; }
-.hero__l1 { text-wrap: balance; }
-.hero__l2 {                             /* the tagline sits under the name, smaller and gray */
-  margin-top: .35em;
+.hero__l1, .hero__l2, .hero__tag { display: block; }
+.hero__l2 { color: var(--text-2); }     /* the second name line in gray, as in the reference */
+.hero__tag {                            /* the tagline sits under the name, much smaller */
+  margin-top: 20px;
   font-size: var(--fs-hero-sub);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
   color: var(--text-2);
   text-wrap: balance;
 }

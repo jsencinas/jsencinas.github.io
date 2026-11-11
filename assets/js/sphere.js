@@ -51,6 +51,14 @@ const SPHERE = {
   burstSink: 0.08,          // downward drift while the dust hangs, in sphere radii
   burstDim: 0.35,           // share of alpha lost at full scatter
 
+  // Figures: after each burst the dust rebuilds into the next one, then the list repeats.
+  // All fit inside the unit sphere, so they share its size and position.
+  figures: ['sphere', 'torus', 'cube', 'helix', 'atom'],
+  torus: { ring: 0.66, tube: 0.30, tipDeg: 40 },   // tipped so the spin never shows it edge-on
+  cube: { half: 0.6 },
+  helix: { radius: 0.45, height: 0.95, turns: 1.5, rungs: 16, strandShare: 0.55 },
+  atom: { orbit: 0.95, orbitTiltDeg: 70, nucleus: 0.16, nucleusShare: 0.12 }, // three orbits 60° apart
+
   // Rendering budget
   fps: 30,
   dprMax: 1.5,
@@ -82,6 +90,64 @@ function bucketOf(edges, depth) {
   return b;
 }
 
+const PHI = (Math.sqrt(5) - 1) / 2;
+const frac = (v) => v - Math.floor(v);
+
+// Each generator returns the position of shell dot i of m, inside the unit sphere.
+const FIGURES = {
+  sphere(i, m) {
+    const y = 1 - ((i + 0.5) / m) * 2, r = Math.sqrt(1 - y * y), th = i * GOLDEN;
+    return [Math.cos(th) * r, y, Math.sin(th) * r];
+  },
+  torus(i, m) {
+    const { ring, tube } = SPHERE.torus;
+    const u = TAU * (i + 0.5) / m, v = TAU * frac(i * PHI * 37);
+    const w = ring + tube * Math.cos(v);
+    const x = w * Math.cos(u), y = w * Math.sin(u), z = tube * Math.sin(v);
+    const a = SPHERE.torus.tipDeg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    return [x, y * ca - z * sa, y * sa + z * ca];
+  },
+  cube(i, m) {
+    const h = SPHERE.cube.half, per = Math.ceil(m / 6), g = Math.ceil(Math.sqrt(per));
+    const rows = Math.ceil(per / g), j = Math.floor(i / 6);
+    const a = (((j % g) + 0.5) / g * 2 - 1) * h, b = ((Math.floor(j / g) + 0.5) / rows * 2 - 1) * h;
+    switch (i % 6) {
+      case 0: return [h, a, b];
+      case 1: return [-h, a, b];
+      case 2: return [a, h, b];
+      case 3: return [a, -h, b];
+      case 4: return [a, b, h];
+      default: return [a, b, -h];
+    }
+  },
+  helix(i, m) {
+    const { radius, height, turns, rungs, strandShare } = SPHERE.helix;
+    const perStrand = Math.floor((m * strandShare) / 2);
+    if (i < perStrand * 2) {
+      const t = (Math.floor(i / 2) + 0.5) / perStrand;
+      const a = t * turns * TAU + (i % 2) * Math.PI;
+      return [radius * Math.cos(a), height * (t * 2 - 1), radius * Math.sin(a)];
+    }
+    const k = i - perStrand * 2, rest = m - perStrand * 2, perRung = Math.max(1, Math.floor(rest / rungs));
+    const q = k % rungs, t = (q + 0.5) / rungs, w = ((Math.floor(k / rungs) % perRung) + 0.5) / perRung * 2 - 1;
+    const a = t * turns * TAU;
+    return [radius * Math.cos(a) * w, height * (t * 2 - 1), radius * Math.sin(a) * w];
+  },
+  atom(i, m) {
+    const { orbit, orbitTiltDeg, nucleus, nucleusShare } = SPHERE.atom;
+    const core = Math.round(m * nucleusShare);
+    if (i < core) {
+      const q = FIGURES.sphere(i, core);
+      return [q[0] * nucleus, q[1] * nucleus, q[2] * nucleus];
+    }
+    const k = i - core, rings = 3, per = Math.ceil((m - core) / rings);
+    const u = TAU * (Math.floor(k / rings) + 0.5) / per, b = (k % rings) * Math.PI / 3;
+    const t = orbitTiltDeg * Math.PI / 180;
+    const x = orbit * Math.cos(u), y = -orbit * Math.sin(u) * Math.sin(t), z = orbit * Math.sin(u) * Math.cos(t);
+    return [x * Math.cos(b) + z * Math.sin(b), y, -x * Math.sin(b) + z * Math.cos(b)];
+  },
+};
+
 export function initSphere(canvas) {
   const ctx = canvas && canvas.getContext('2d');
   if (!ctx) return { reveal() {} };
@@ -98,6 +164,8 @@ export function initSphere(canvas) {
   let n = 0, X, Y, Z, R, K, SX, SY, D, P;
   // Per-dot burst data: outward spread, scatter vector, crumble and rebuild delays
   let BS, BX, BY, BD, BR;
+  // Per-figure positions: FX[f], FY[f], FZ[f] for figure f
+  let FX = [], FY = [], FZ = [];
   // Per-bucket screen positions, rebuilt every frame
   let buf = [], len = [];
 
@@ -154,6 +222,16 @@ export function initSphere(canvas) {
       D[i] = rnd() * SPHERE.assembleDelayMaxMs;
       P[i] = rnd() * TAU;
     }
+    // Figure positions: shell dots take each figure's shape, loose dots stay where they are
+    FX = []; FY = []; FZ = [];
+    for (const name of SPHERE.figures) {
+      const fx = new Float32Array(n), fy = new Float32Array(n), fz = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        if (i < nShell) { const q = FIGURES[name](i, nShell); fx[i] = q[0]; fy[i] = q[1]; fz[i] = q[2]; }
+        else { fx[i] = X[i]; fy[i] = Y[i]; fz[i] = Z[i]; }
+      }
+      FX.push(fx); FY.push(fy); FZ.push(fz);
+    }
     buf = kinds.map((k) => k.alpha.map(() => new Float32Array(n * 2)));
     len = kinds.map((k) => k.alpha.map(() => 0));
     fullClear = true;
@@ -194,9 +272,11 @@ export function initSphere(canvas) {
     if (!assembling && !assembled) { assembled = true; cycleFrom = simTime; monitorFrom = now + SPHERE.warmupMs; }
 
     // Burst cycle: u is the time since the hold ended, -1 while the sphere is whole
-    let u = -1;
+    let u = -1, fig = 0;
     if (assembled && !reduced) {
-      const c = (simTime - cycleFrom) % cycleMs;
+      const into = simTime - cycleFrom;
+      fig = Math.floor(into / cycleMs) % SPHERE.figures.length;
+      const c = into % cycleMs;
       if (c >= SPHERE.holdMs) u = c - SPHERE.holdMs;
     }
     const bursting = u >= 0;
@@ -209,6 +289,11 @@ export function initSphere(canvas) {
       ctx.clearRect(clearBox[0], clearBox[1], clearBox[2], clearBox[3]);
     }
     const reformAt = SPHERE.burstMs + SPHERE.burstDelayMaxMs + SPHERE.hangMs;
+    // While the dust is out, the figure underneath morphs into the next one
+    const next = (fig + 1) % SPHERE.figures.length;
+    const morph = u < 0 ? 0
+      : easeInOutCubic(Math.min(1, Math.max(0, (u - SPHERE.burstMs * 0.5) / (reformAt - SPHERE.burstMs * 0.5))));
+    const ax = FX[fig], ay = FY[fig], az = FZ[fig], bx = FX[next], by = FY[next], bz = FZ[next];
     const sink = bursting
       ? SPHERE.burstSink * radius * Math.min(1, Math.max(0, (u - SPHERE.burstMs - SPHERE.burstDelayMaxMs) / SPHERE.hangMs))
       : 0;
@@ -226,7 +311,8 @@ export function initSphere(canvas) {
       const kind = K[i];
       let r = R[i];
       if (kind === LOOSE) r += Math.sin(wob + P[i]) * SPHERE.looseWobble;
-      const x = X[i], y = Y[i], z = Z[i];
+      let x = ax[i], y = ay[i], z = az[i];
+      if (morph > 0) { x += (bx[i] - x) * morph; y += (by[i] - y) * morph; z += (bz[i] - z) * morph; }
       // spin around the sphere's own axis
       const x1 = x * ca + z * sa;
       const z1 = z * ca - x * sa;
