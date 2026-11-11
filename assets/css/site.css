@@ -115,9 +115,10 @@
   --hero-caption-gap: 40px;             /* nav bottom to captions */
   --hero-pad-bottom: clamp(1.5rem, 0.979rem + 2.143vw, 2.75rem);
   --hero-title-gap: 32px;               /* headline to description row */
-  --hero-scrim: linear-gradient(to top, var(--bg) 0%, rgb(11 12 13 / .72) 30%, transparent 62%);
+  /* phones: tied to the headline, whose top edge sits at 50vh - 6px */
+  --hero-scrim: linear-gradient(to bottom, transparent calc(50vh - 48px), rgb(11 12 13 / .82) calc(50vh + 24px), var(--bg) calc(50vh + 150px));
   --hero-grid-pitch: 24px;
-  --hero-grid-alpha: .05;               /* static dotted texture, 0 to remove */
+  --hero-grid-alpha: 0;                 /* static dotted texture, 0 to remove */
   --hero-cross: rgb(243 241 236 / .18);
   --card-cross: var(--line);
   --cross-size: 11px;                   /* odd number keeps the 1px arms centered */
@@ -140,7 +141,7 @@
     --nav-bg: rgb(20 21 23 / .86);
     --hero-title-gap: 48px;
     --hero-sphere-room: 0px;
-    --hero-scrim: linear-gradient(to top, var(--bg) 0%, transparent 42%);
+    --hero-scrim: linear-gradient(to top, var(--bg) 0%, transparent 34%);
   }
 }
 
@@ -440,9 +441,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .intro__line {
   position: absolute;
-  top: calc(var(--nav-inset) + var(--nav-h) / 2);
-  left: var(--nav-inset);
-  right: var(--nav-inset);
+  top: calc(var(--nav-inset) + var(--nav-h) - 1px);   /* lands on the nav's bottom border */
+  left: calc(var(--nav-inset) + var(--r-md));
+  right: calc(var(--nav-inset) + var(--r-md));
   height: 1px;
   background: var(--intro-line-color);
   transform: scaleX(0);
@@ -477,7 +478,13 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   .hero__canvas { --hero-canvas-h: 100svh; }
 }
 @media (min-width: 900px) {
-  .hero__canvas { height: 100%; }
+  /* Desktop: full height, and never wider than the content column, so the
+     sphere keeps its place next to the headline on very wide screens. */
+  .hero__canvas {
+    height: 100%;
+    left: max(0px, calc((100% - var(--container) - 2 * var(--gutter)) / 2));
+    width: min(100%, calc(var(--container) + 2 * var(--gutter)));
+  }
 }
 
 .hero__scrim {
@@ -551,6 +558,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   font-size: var(--fs-lead);
   line-height: 1.45;
   color: var(--text-2);
+  text-wrap: pretty;
 }
 .hero__actions {
   display: flex;

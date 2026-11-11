@@ -6,22 +6,22 @@
    ===================================================================== */
 const SPHERE = {
   // Size and position. Diameter = min(diameterW * heroWidth, diameterH * heroHeight).
-  desktop: { diameterW: 0.42, diameterH: 0.68, cx: 0.70, cy: 0.46 },
-  phone:   { diameterW: 0.84, diameterH: 0.48, cx: 0.60, cy: 0.32 },
+  desktop: { diameterW: 0.40, diameterH: 0.64, cx: 0.72, cy: 0.45 },
+  phone:   { diameterW: 0.66, diameterH: 0.32, cx: 0.60, cy: 0.40 },
   phoneBelow: 900,          // hero widths under this use the phone layout and counts
 
   // Orientation and motion
   tiltZDeg: 18,             // axis lean in the screen plane
-  tiltXDeg: 0,              // axis lean toward the viewer (0 = none)
+  tiltXDeg: 14,             // axis lean toward the viewer (0 = none)
   revolutionMs: 90000,      // one full turn
-  perspective: 0.12,        // 0 = flat; >0 makes front dots spread slightly wider
+  perspective: 0.16,        // 0 = flat; >0 makes front dots spread slightly wider
 
   // Dot counts. The auto-reducer steps down each ladder when frames are slow.
   ladderDesktop: [1400, 1000, 700],
   ladderPhone: [650, 450],
   champagneShare: 0.04,     // of all dots
   looseShare: 0.06,         // of all dots, floating outside the shell
-  looseRadius: [1.05, 1.35],// in sphere radii
+  looseRadius: [1.04, 1.28],// in sphere radii
   looseWobble: 0.02,        // radial breathing of loose dots, in sphere radii
   looseWobbleMs: 9000,      // period of that breathing
 
@@ -30,9 +30,9 @@ const SPHERE = {
   accentRGB: [217, 199, 160],
 
   // Depth buckets. `edges` split depth into len(edges)+1 buckets, back to front.
-  shell:     { edges: [-0.5, 0, 0.5], alpha: [0.10, 0.18, 0.28, 0.55], size: [1.0, 1.3, 1.6, 2.0] },
-  loose:     { edges: [0],            alpha: [0.12, 0.25],             size: [1.0, 1.3] },
-  champagne: { edges: [0, 0.5],       alpha: [0.30, 0.60, 0.90],       size: [1.6, 1.9, 2.2] },
+  shell:     { edges: [-0.6, -0.2, 0.2, 0.6, 0.85], alpha: [0.10, 0.15, 0.24, 0.40, 0.58, 0.72], size: [1.0, 1.0, 1.3, 1.7, 2.0, 2.2] },
+  loose:     { edges: [0],                    alpha: [0.12, 0.26],                   size: [1.0, 1.3] },
+  champagne: { edges: [-0.2, 0.2, 0.6],       alpha: [0.22, 0.45, 0.70, 0.95],       size: [1.6, 2.0, 2.4, 2.6] },
 
   // Assemble on load: dots start scattered across the hero at alpha 0.
   assembleMs: 1800,
