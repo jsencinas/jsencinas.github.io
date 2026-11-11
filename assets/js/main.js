@@ -16,6 +16,19 @@ const RESOLVE = {
 };
 /* ---------------------------------------------- */
 
+/* ---------- HEADLINE DECRYPT CONSTANTS (timing is in site.css, --intro-decrypt-*) ---------- */
+const DECRYPT = {
+  swapEveryMs: 55,     // how often scrambled letters change
+  jitterMs: 90,        // random spread of each letter's lock time, so it doesn't read as a sweep
+  // Random letters come from a set of about the same width as the real one, so they don't overlap their neighbors.
+  narrow: 'fijlrt1',
+  wideLower: 'mw',
+  wideUpper: 'MW',
+  upper: 'ABCDEFGHKLNOPRSTUVXYZ023456789',
+  lower: 'abcdeghknopqsuvxyz023456789',
+};
+/* ------------------------------------------------------------------------------------------ */
+
 const root = document.documentElement;
 const introOn = root.classList.contains('intro-on'); // every load, except reduced motion or a #link
 
@@ -88,6 +101,65 @@ function runResolve(jobs) {
   requestAnimationFrame(frame);
 }
 
+/* ---------- Headline decrypt ---------- */
+function scrambleFor(ch) {
+  const set = 'fijlrtI1'.includes(ch) ? DECRYPT.narrow
+    : 'mw'.includes(ch) ? DECRYPT.wideLower
+    : 'MW'.includes(ch) ? DECRYPT.wideUpper
+    : ch !== ch.toLowerCase() ? DECRYPT.upper : DECRYPT.lower;
+  return set[(Math.random() * set.length) | 0];
+}
+
+// Wraps each letter of a line in a span that keeps the letter's width and shows a random one over it.
+function prepareDecrypt(line) {
+  const text = line.textContent;
+  const chars = [];
+  line.textContent = '';
+  for (const ch of text) {
+    if (/\s/.test(ch)) { line.append(ch); continue; }
+    const s = document.createElement('span');
+    s.className = 'dc is-scr';
+    s.textContent = ch;
+    s.dataset.s = scrambleFor(ch);
+    line.append(s);
+    chars.push({ s, ch });
+  }
+  return { chars, restore() { line.textContent = text; } };
+}
+
+// Scrambles from now; line k locks letter by letter between `at` + k * stagger and that + dur (times from performance.now()).
+function runDecrypt(jobs, at, dur, stagger) {
+  jobs.forEach((job, k) => {
+    const n = job.chars.length;
+    job.chars.forEach((c, i) => {
+      c.lockAt = at + k * stagger + ((i + 1) / n) * dur + (Math.random() - 0.5) * DECRYPT.jitterMs;
+    });
+  });
+  let lastSwap = 0, raf = 0, over = false;
+  const finish = () => {
+    if (over) return;
+    over = true;
+    cancelAnimationFrame(raf);
+    jobs.forEach((j) => j.restore());
+  };
+  function frame(now) {
+    const swap = now - lastSwap >= DECRYPT.swapEveryMs;
+    if (swap) lastSwap = now;
+    let left = 0;
+    for (const job of jobs) {
+      for (const c of job.chars) {
+        if (c.done) continue;
+        if (now >= c.lockAt) { c.done = true; c.s.classList.remove('is-scr'); }
+        else { left++; if (swap) c.s.dataset.s = scrambleFor(c.ch); }
+      }
+    }
+    if (left) raf = requestAnimationFrame(frame);
+    else finish();
+  }
+  raf = requestAnimationFrame(frame);
+  return finish;
+}
+
 /* ---------- Intro + hero reveal ---------- */
 function initHero() {
   const sphere = initSphere(document.querySelector('.hero__canvas'));
@@ -99,47 +171,54 @@ function initHero() {
     return;
   }
 
-  // Captions scramble now, while the overlay still covers them, and resolve after the headline wipe.
+  // Captions and the name scramble now, while the overlay still covers them.
   const jobs = [...document.querySelectorAll('[data-resolve]')].map(prepareResolve);
+  const lines = [...document.querySelectorAll('.hero__l1, .hero__l2')].map(prepareDecrypt);
 
+  // Times are from navigation start (performance.now), the same clock the CSS animations follow.
   const outDelay = cssMs('--intro-out-delay', 2600);
   const outDur = cssMs('--intro-out-dur', 500);
-  const wipeEnd = cssMs('--intro-wipe-delay', 2900) + cssMs('--intro-wipe-dur', 900) + cssMs('--intro-wipe-stagger', 160);
+  const decryptAt = cssMs('--intro-decrypt-delay', 2850);
+  const decryptDur = cssMs('--intro-decrypt-dur', 1000);
+  const decryptStagger = cssMs('--intro-decrypt-stagger', 250);
+  const decryptEnd = decryptAt + decryptDur + decryptStagger;
   const skipDur = cssMs('--intro-skip-dur', 150);
   const inputs = ['keydown', 'pointerdown', 'wheel', 'touchstart'];
   const timers = [];
-  let revealed = false, resolved = false, done = false;
+  const at = (ms, fn) => timers.push(setTimeout(fn, Math.max(0, ms - performance.now())));
+  let revealed = false, resolved = false, done = false, stopDecrypt = null;
 
   function reveal() {
     if (revealed) return;
     revealed = true;
     sphere.reveal();
+    stopDecrypt = runDecrypt(lines, decryptAt, decryptDur, decryptStagger);
   }
   function resolveCaptions() {
     if (resolved) return;
     resolved = true;
     runResolve(jobs);
   }
-  function finish() {
+  function finish() {   // removes the overlay; input can still skip the decrypt until it ends
     if (done) return;
     done = true;
-    inputs.forEach((e) => removeEventListener(e, skip, true));
     intro.remove();
   }
-  // Any input ends the intro at once: overlay out in 150 ms, headline uncovered, captions resolve.
+  // Any input ends the intro at once: overlay out in 150 ms, name decrypted, captions resolve.
   function skip() {
     timers.forEach(clearTimeout);
     inputs.forEach((e) => removeEventListener(e, skip, true));
     root.classList.add('intro-skip');
-    reveal();
+    if (!revealed) { revealed = true; sphere.reveal(); }
+    if (stopDecrypt) stopDecrypt(); else lines.forEach((l) => l.restore());
     setTimeout(resolveCaptions, skipDur);
     setTimeout(finish, skipDur + 50);
   }
 
-  timers.push(setTimeout(reveal, outDelay));
-  timers.push(setTimeout(finish, outDelay + outDur + 100));
-  timers.push(setTimeout(resolveCaptions, wipeEnd));
-  timers.push(setTimeout(() => inputs.forEach((e) => removeEventListener(e, skip, true)), wipeEnd));
+  at(outDelay, reveal);
+  at(outDelay + outDur + 100, finish);
+  at(decryptEnd, resolveCaptions);
+  at(decryptEnd, () => inputs.forEach((e) => removeEventListener(e, skip, true)));
   inputs.forEach((e) => addEventListener(e, skip, { capture: true, passive: true }));
 }
 

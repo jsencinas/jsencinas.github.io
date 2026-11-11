@@ -113,7 +113,7 @@
   --nav-blur: 10px;
   --nav-panel-dur: 200ms;
 
-  /* intro, every load (main.js reads --intro-out-delay, --intro-out-dur, --intro-wipe-*, --intro-skip-dur) */
+  /* intro, every load (main.js reads --intro-out-delay, --intro-out-dur, --intro-decrypt-*, --intro-skip-dur) */
   --intro-in-delay: 150ms;        /* the name fades in at the center */
   --intro-in-dur: 500ms;
   --intro-split-delay: 700ms;     /* the words slide to the edges as the hairlines grow */
@@ -122,9 +122,11 @@
   --intro-rise-dur: 650ms;
   --intro-out-delay: 2600ms;      /* the overlay fades, the sphere starts to form */
   --intro-out-dur: 500ms;
-  --intro-wipe-delay: 2900ms;     /* a bar wipes across each name line, then uncovers it */
-  --intro-wipe-dur: 900ms;
-  --intro-wipe-stagger: 160ms;
+  --intro-decrypt-delay: 2850ms;  /* the name, scrambled since the overlay lifted, decrypts left to right */
+  --intro-decrypt-dur: 1000ms;    /* per line */
+  --intro-decrypt-stagger: 250ms; /* the second line starts this much later */
+  --intro-decrypt-end: calc(var(--intro-decrypt-delay) + var(--intro-decrypt-dur) + var(--intro-decrypt-stagger));
+  --decrypt-dim: .55;             /* scrambled letters */
   --intro-line-color: var(--line-strong);
   --intro-fs: 15px;               /* the name row (20px from 900px wide) */
   --intro-mark: 24px;
@@ -504,32 +506,24 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   .intro__half--r { padding-left: 24px; }
 }
 
-/* Headline wipe: a bar grows over each name line, the line appears under it, the bar leaves to the right.
-   The text is painted from the first frame (an early LCP); only the cover and the bar animate. */
-.intro-on .hero__l1, .intro-on .hero__l2 { position: relative; width: fit-content; }
-.intro-on .hero__l1::before, .intro-on .hero__l2::before,
-.intro-on .hero__l1::after, .intro-on .hero__l2::after {
-  content: "";
+/* Headline decrypt (main.js): each letter keeps its real width but is drawn as a random character,
+   dimmed, until it locks in, left to right. The real text is painted from the first frame (an early LCP). */
+.hero__l1 { --dc-color: var(--text); }
+.hero__l2 { --dc-color: var(--text-2); }
+.hero__title .dc { position: relative; }
+.hero__title .dc.is-scr { color: transparent; }
+.hero__title .dc.is-scr::after {
+  content: attr(data-s);
+  content: attr(data-s) / "";             /* not read out by screen readers */
   position: absolute;
-  pointer-events: none;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  color: var(--dc-color);
+  opacity: var(--decrypt-dim);
 }
-.intro-on .hero__l1::before, .intro-on .hero__l2::before {   /* cover, the color of the page */
-  inset: -0.06em -0.04em;
-  background: var(--bg);
-  animation: intro-cover var(--intro-wipe-dur) linear var(--wipe-at) both;
-}
-.intro-on .hero__l1::after, .intro-on .hero__l2::after {     /* the bar */
-  inset: 0.1em -0.02em 0.04em;
-  background: var(--wipe-color);
-  transform: scaleX(0);
-  animation: intro-wipe var(--intro-wipe-dur) var(--ease-inout) var(--wipe-at) both;
-}
-.intro-on .hero__l1 { --wipe-at: var(--intro-wipe-delay); --wipe-color: var(--text); }
-.intro-on .hero__l2 { --wipe-at: calc(var(--intro-wipe-delay) + var(--intro-wipe-stagger)); --wipe-color: color-mix(in srgb, var(--text) 70%, var(--bg)); }   /* solid: --text-2 is translucent */
-.intro-on .hero__tag { animation: intro-fade-in 500ms var(--ease-out) calc(var(--intro-wipe-delay) + var(--intro-wipe-dur)) both; }
-.intro-on .hero [data-resolve] { animation: intro-fade-in 400ms var(--ease-out) calc(var(--intro-wipe-delay) + var(--intro-wipe-dur) + var(--intro-wipe-stagger)) both; }   /* captions appear as they resolve */
-.intro-on.intro-skip :is(.hero__l1, .hero__l2)::before,
-.intro-on.intro-skip :is(.hero__l1, .hero__l2)::after { display: none; }
+.intro-on .hero__tag { animation: intro-fade-in 500ms var(--ease-out) var(--intro-decrypt-end) both; }
+.intro-on .hero [data-resolve] { animation: intro-fade-in 400ms var(--ease-out) var(--intro-decrypt-end) both; }   /* captions appear as they resolve */
 .intro-on.intro-skip :is(.hero__tag, .hero [data-resolve]) { animation: none; }
 
 @keyframes intro-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -541,13 +535,6 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 @keyframes intro-rule { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes intro-split-l { from { transform: translateX(calc(100cqw - 100%)); } to { transform: none; } }
 @keyframes intro-split-r { from { transform: translateX(calc(100% - 100cqw)); } to { transform: none; } }
-@keyframes intro-cover { 0%, 50% { opacity: 1; } 50.1%, 100% { opacity: 0; } }
-@keyframes intro-wipe {
-  0% { transform: scaleX(0); transform-origin: left center; }
-  45% { transform: scaleX(1); transform-origin: left center; }
-  55% { transform: scaleX(1); transform-origin: right center; }
-  100% { transform: scaleX(0); transform-origin: right center; }
-}
 
 /* ---------- 8. Hero ---------- */
 .hero {
