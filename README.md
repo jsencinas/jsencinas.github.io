@@ -20,7 +20,7 @@ The current files are abstract **samples** rendered for layout. To use real foot
 | Slot | Files | Used in | Recommended specs |
 |---|---|---|---|
 | Wide panel | `assets/video/sample-panel.mp4`, `.webm`, poster `sample-panel.webp` | The "Software that has to keep up" card between Projects and About. Plays only while visible. Text sits on top with a dim layer, so keep it calm and dark. | 1280 × 720, about 6 s, seamless loop |
-| Synthia | `assets/video/sample-synthia.mp4`, `.webm`, poster `sample-synthia.webp` | Synthia project card | 960 × 540, about 4 s, seamless loop |
+| Synthia | `assets/video/sample-synthia.mp4`, `.webm`, poster `sample-synthia.webp` | Synthia project card. On screens 1200 to 1380 px wide the card crops up to about 15% of the video's width (left and right), so keep the subject centered. | 960 × 540, about 4 s, seamless loop |
 | FIRST 7102 | `assets/video/sample-robotics.mp4`, `.webm`, poster `sample-robotics.webp` | FIRST Robotics 7102 project card | 960 × 540, about 4 s, seamless loop |
 | 6-DOF arm | `assets/video/sample-arm.mp4`, `.webm`, poster `sample-arm.webp` | Robotic arm project card | 960 × 540, about 4 s, seamless loop |
 
