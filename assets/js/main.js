@@ -2,8 +2,8 @@
    main.js: hero sphere, nav menu, clock, console greeting.
    Sections below the hero live in page.js.
    ===================================================================== */
-import { initSphere } from './sphere.js?v=20261112p';
-import { initPage } from './page.js?v=20261112p';
+import { initSphere } from './sphere.js?v=20261112q';
+import { initPage } from './page.js?v=20261112q';
 
 /* ---------- Hero: the sphere forms as soon as the page loads ---------- */
 function initHero() {
