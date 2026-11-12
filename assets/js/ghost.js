@@ -11,7 +11,6 @@
      boo     crouch, pop up, wide eyes and an open mouth
      wink    one eye closes, head tilted
      sleepy  lids droop, it sinks, z's float up, then it wakes with a start
-     dizzy   a few fast loops, then a woozy wobble with the shine circling in both eyes
      vanish  dissolves, reappears somewhere else, surprised
      dash    narrowed eyes and a wind-up, a dash across, a look back
    plus calm ones in between (float somewhere, look around, sink and rise).
@@ -53,14 +52,14 @@ const GHOST = {
 // How often each scene is picked (never the same one twice in a row).
 const WEIGHTS = {
   wander: 2.5, look: 1.2, dip: 0.8,
-  boo: 1.5, wink: 1, sleepy: 1, dizzy: 1.1, vanish: 1.2, dash: 1.3,
+  boo: 1.5, wink: 1, sleepy: 1.6, vanish: 1.2, dash: 1.3,
 };
 // Expressions, each eased by a spring: [stiffness, damping ratio]
 const FACE_SPRINGS = {
   wide: [90, 0.55], grow: [45, 0.35], angry: [70, 0.8], lid: [9, 1],
-  dizzy: [40, 0.8], fade: [10, 1], wink: [140, 0.9], tilt: [30, 0.55],
+  fade: [10, 1], wink: [140, 0.9], tilt: [30, 0.55],
 };
-const NEUTRAL = { wide: 0, grow: 0, angry: 0, lid: 0, dizzy: 0, fade: 1, wink: 0, tilt: 0 };
+const NEUTRAL = { wide: 0, grow: 0, angry: 0, lid: 0, fade: 1, wink: 0, tilt: 0 };
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((b) => b / 16 - 0.47);
 /* -------------------------------------- */
 
@@ -105,10 +104,9 @@ export function initGhost(canvas) {
   const face = {}, faceT = { ...NEUTRAL };
   for (const key in NEUTRAL) face[key] = { x: NEUTRAL[key], v: 0 };
   let time = 0, hemPhase = 0;
-  let tx = 0, ty = 0, k = 5, z = 0.8, lookT = null, step = {}, stepStart = 0;
+  let tx = 0, ty = 0, k = 5, z = 0.8, lookT = null, step = {};
   let steps = [{ ms: 900 }], stepEnd = 0, lastName = '';
   let idleLook = [0, 0], idleLookAt = 0, nextBlink = 1800, blinkAt = -1e9, speckDebt = 0, nextZ = 0;
-  let ox0 = 0, oy0 = 0;   // where an orbit or sway is centered
   const specks = [];
 
   function somewhere(minDist) {
@@ -160,15 +158,6 @@ export function initGhost(canvas) {
         { look: [0.8, 0], ms: 450 },
       ];
     },
-    dizzy: () => {
-      const x = clamp(px.x, -bx + 0.35, bx - 0.35), y = clamp(py.x, -by + 0.2, by - 0.2);
-      return [
-        { to: [x, y], k: 8, z: 0.8, ms: 400 },
-        { orbit: [Math.min(0.35, bx), 650], center: [x, y], k: 30, z: 0.7, look: [0, 0], ms: 1950 },
-        { to: [x, y], sway: [0.12, 900], center: [x, y], k: 12, z: 0.6, face: { dizzy: 1 }, ms: 2200, noBlink: true },
-        { to: [x, y], face: { dizzy: 0 }, ms: 500 },
-      ];
-    },
     vanish: () => [
       { look: [0, 0.2], face: { fade: 0 }, ms: 1100 },
       { teleport: somewhere(0.9), face: { fade: 1 }, ms: 250 },
@@ -196,9 +185,8 @@ export function initGhost(canvas) {
     steps = PLANS[name]();
   }
   function runStep(s) {
-    step = s; stepStart = time;
+    step = s;
     if (s.to) { tx = clamp(s.to[0], -bx, bx); ty = clamp(s.to[1], -by, by); }
-    if (s.center) { ox0 = s.center[0]; oy0 = s.center[1]; }
     if (s.teleport) {
       burst(14);
       px.x = tx = clamp(s.teleport[0], -bx, bx); py.x = ty = clamp(s.teleport[1], -by, by);
@@ -225,14 +213,6 @@ export function initGhost(canvas) {
   function update(dt) {
     time += dt * 1000;
     if (time >= stepEnd) { if (!steps.length) nextBehavior(); runStep(steps.shift()); }
-    const st = time - stepStart;
-    if (step.orbit) {            // loops around a center
-      const [r, per] = step.orbit, a = TAU * st / per;
-      tx = clamp(ox0 + r * Math.sin(a), -bx, bx); ty = clamp(oy0 + r * 0.6 * Math.cos(a), -by, by);
-    } else if (step.sway) {      // a woozy side to side
-      const [amp, per] = step.sway;
-      tx = ox0 + amp * Math.sin(TAU * st / per); ty = oy0 + amp * 0.4 * Math.sin(2 * TAU * st / per);
-    }
     spring(px, tx, k, z, dt);
     spring(py, ty, k, z, dt);
 
@@ -386,24 +366,19 @@ export function initGhost(canvas) {
     for (const key in face) f[key] = face[key].x;
     const bt = time - blinkAt;
     const blink = bt < G.blinkMs ? Math.max(0.08, Math.abs(1 - 2 * bt / G.blinkMs)) : 1;
-    const ox = lookX.x * G.lookReach[0] * (1 - f.dizzy), oy = lookY.x * G.lookReach[1] * (1 - f.dizzy);
+    const ox = lookX.x * G.lookReach[0], oy = lookY.x * G.lookReach[1];
     const kw = 1 + 0.3 * f.wide;
     const ew = G.eyeW * kw, ehBase = G.eyeH * kw;
     const eyes = [-1, 1].map((side) => ({
       side, cx: side * G.eyeX + ox, cy: G.eyeY + oy,
       eh: ehBase * blink * (side === 1 ? Math.max(0.08, 1 - 0.92 * f.wink) : 1),
     }));
-    // shines: one cell per eye; they circle when dizzy
+    // shines: one cell per eye
     const glints = [];
     const showGlint = blink > 0.6 && f.lid < 0.6 && f.angry < 0.5 && f.fade > 0.7;
     for (const e of eyes) {
       if (!showGlint || (e.side === 1 && f.wink > 0.4)) continue;
-      let gu = ew * 0.3, gv = -e.eh * 0.4;
-      if (f.dizzy > 0.3) {   // both eyes circle together, the same way
-        const a = time * 0.011;
-        gu = Math.cos(a) * ew * 0.55; gv = Math.sin(a) * e.eh * 0.55;
-      }
-      const [gx, gy] = toScreen(e.cx + gu, e.cy + gv);
+      const [gx, gy] = toScreen(e.cx + ew * 0.3, e.cy - e.eh * 0.4);
       glints.push(Math.floor(gy / chH) * 100000 + Math.floor(gx / cw));
     }
     const mouthO = f.wide > 0.15, mw = 0.12 * f.wide, mh = 0.15 * f.wide;
@@ -474,7 +449,7 @@ export function initGhost(canvas) {
     draw();
   }
 
-  // For checking the scenes by hand: add ?ghost=dizzy (or any scene name) to the page URL.
+  // For checking the scenes by hand: add ?ghost=sleepy (or any scene name) to the page URL.
   const forced = new URLSearchParams(location.search).get('ghost');
   if (forced && PLANS[forced]) for (const n in WEIGHTS) WEIGHTS[n] = n === forced ? 1 : 0;   // then it alternates with wander
 
