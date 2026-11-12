@@ -3,9 +3,9 @@
    Intro timings come from CSS custom properties (site.css, "intro").
    Sections below the hero live in page.js.
    ===================================================================== */
-import { initSphere } from './sphere.js?v=20261112b';
-import { initPage } from './page.js?v=20261112b';
-import { prepareDecrypt, runDecrypt } from './decrypt.js?v=20261112b';
+import { initSphere } from './sphere.js?v=20261112c';
+import { initPage } from './page.js?v=20261112c';
+import { prepareDecrypt, runDecrypt } from './decrypt.js?v=20261112c';
 
 /* ---------- CAPTION RESOLVE CONSTANTS ---------- */
 const RESOLVE = {

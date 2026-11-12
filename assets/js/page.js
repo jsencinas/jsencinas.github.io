@@ -5,7 +5,7 @@
    No scroll listeners: only IntersectionObserver and CSS.
    ===================================================================== */
 
-import { decryptTitle } from './decrypt.js?v=20261112b';
+import { decryptTitle } from './decrypt.js?v=20261112c';
 
 /* ---------- TIMING CONSTANTS ---------- */
 const PAGE = {
@@ -19,10 +19,10 @@ const PAGE = {
   statementGroups: 3,     // fallback without scroll-driven animations
   statementAt: 0.4,
   panelAt: 0.25,          // visible share that plays the wide video
-  titleDelayMs: 120,      // titles: scrambling starts on entry, locking starts this much later
-  titleMsPerChar: 40,     // titles: decrypt time grows with length, between the two limits below
-  titleMinMs: 900,
-  titleMaxMs: 1800,
+  titleDelayMs: 200,      // titles: scrambling starts on entry, locking starts this much later
+  titleMsPerChar: 60,     // titles: decrypt time grows with length, between the two limits below
+  titleMinMs: 1300,
+  titleMaxMs: 2600,
 };
 /* ------------------------------------- */
 
@@ -153,7 +153,7 @@ function initTitles() {
 function initArt() {
   const canvas = document.querySelector('.ghostterm__screen');
   if (!canvas) return;
-  const load = () => import('./ghost.js?v=20261112b').then((m) => m.initGhost(canvas));
+  const load = () => import('./ghost.js?v=20261112c').then((m) => m.initGhost(canvas));
   if (!('IntersectionObserver' in window)) { load(); return; }
   const io = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
