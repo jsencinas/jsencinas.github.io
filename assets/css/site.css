@@ -113,16 +113,25 @@
   --nav-blur: 10px;
   --nav-panel-dur: 200ms;
 
-  /* intro, every load (main.js reads --intro-out-delay, --intro-out-dur, --intro-decrypt-*, --intro-skip-dur) */
+  /* intro, every load (main.js reads --intro-out-*, --intro-decrypt-*, --intro-skip-dur).
+     Timing and curves measured from roomandpillar.com's intro (sampled every frame, curves fitted):
+     fade 567 ms, split 1267 ms, rise 733 ms, each starting right after the last. */
+  --intro-ease-fade: cubic-bezier(.625, .02, .4, 1);
+  --intro-ease-move: cubic-bezier(.9, .05, .175, .95);   /* slow start, fast middle, long soft landing */
   --intro-in-delay: 150ms;        /* the name fades in at the center */
-  --intro-in-dur: 500ms;
-  --intro-split-delay: 700ms;     /* the words slide to the edges as the hairlines grow */
-  --intro-split-dur: 1100ms;
-  --intro-rise-delay: 1900ms;     /* the row rises to the nav */
-  --intro-rise-dur: 650ms;
-  --intro-out-delay: 2600ms;      /* the overlay fades, the sphere starts to form */
-  --intro-out-dur: 500ms;
-  --intro-decrypt-delay: 2850ms;  /* the name, scrambled since the overlay lifted, decrypts left to right */
+  --intro-in-dur: 610ms;
+  --intro-split-delay: 760ms;     /* the words slide to the edges as the hairlines grow */
+  --intro-split-dur: 1350ms;
+  --intro-rule-fade-dur: 700ms;   /* the hairlines fade in during the first half of the split */
+  --intro-rise-delay: 2110ms;     /* the row rises to the nav */
+  --intro-rise-dur: 800ms;
+  --intro-out-delay: 2900ms;      /* the row lands: it fades, the dark layer lifts, the sphere starts to form */
+  --intro-out-dur: 700ms;
+  --intro-row-out-dur: 300ms;
+  --intro-nav-delay: 3100ms;      /* the nav fades in once the row is gone (they share the same spot) */
+  --intro-nav-dur: 600ms;
+  --intro-settle-dur: 1100ms;     /* hero content rises into place as the dark layer lifts */
+  --intro-decrypt-delay: 3250ms;  /* the name, scrambled since the layer lifted, decrypts left to right */
   --intro-decrypt-dur: 1000ms;    /* per line */
   --intro-decrypt-stagger: 250ms; /* the second line starts this much later */
   --intro-decrypt-end: calc(var(--intro-decrypt-delay) + var(--intro-decrypt-dur) + var(--intro-decrypt-stagger));
@@ -454,11 +463,17 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   position: fixed;
   inset: 0;
   z-index: var(--z-intro);
-  background: var(--bg);
   pointer-events: none;
-  animation: intro-out var(--intro-out-dur) var(--ease-out) var(--intro-out-delay) both;
 }
-.intro-on.intro-skip .intro { animation: intro-out var(--intro-skip-dur) var(--ease-out) 0ms both; }
+.intro-on .intro::before {             /* the dark layer, lifted on its own so the row can leave first */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  animation: intro-out var(--intro-out-dur) cubic-bezier(.4, 0, .2, 1) var(--intro-out-delay) both;
+}
+.intro-on.intro-skip .intro::before,
+.intro-on.intro-skip .intro__row { animation: intro-out var(--intro-skip-dur) var(--ease-out) 0ms both; }
 
 /* The row ends centered on the nav bar; it starts at the middle of the screen. */
 .intro__row {
@@ -474,8 +489,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   letter-spacing: -0.01em;
   color: var(--text);
   animation:
-    intro-fade-in var(--intro-in-dur) var(--ease-out) var(--intro-in-delay) both,
-    intro-rise var(--intro-rise-dur) var(--ease-inout) var(--intro-rise-delay) both;
+    intro-fade-in var(--intro-in-dur) var(--intro-ease-fade) var(--intro-in-delay) both,
+    intro-rise var(--intro-rise-dur) var(--intro-ease-move) var(--intro-rise-delay) both,
+    intro-out var(--intro-row-out-dur) var(--ease-out) var(--intro-out-delay) forwards;
 }
 .intro__half {
   display: flex;
@@ -492,12 +508,24 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   height: 1px;
   background: var(--intro-line-color);
   transform: scaleX(0);
-  animation: intro-rule var(--intro-split-dur) var(--ease-inout) var(--intro-split-delay) both;
+  animation:
+    intro-rule var(--intro-split-dur) var(--intro-ease-move) var(--intro-split-delay) both,
+    intro-fade-in var(--intro-rule-fade-dur) var(--intro-ease-fade) var(--intro-split-delay) both;
 }
 .intro__half--l .intro__rule { transform-origin: right center; }
 .intro__half--r .intro__rule { transform-origin: left center; }
-.intro__half--l .intro__word { animation: intro-split-l var(--intro-split-dur) var(--ease-inout) var(--intro-split-delay) both; }
-.intro__half--r .intro__word { animation: intro-split-r var(--intro-split-dur) var(--ease-inout) var(--intro-split-delay) both; }
+.intro__half--l .intro__word { animation: intro-split-l var(--intro-split-dur) var(--intro-ease-move) var(--intro-split-delay) both; }
+.intro__half--r .intro__word { animation: intro-split-r var(--intro-split-dur) var(--intro-ease-move) var(--intro-split-delay) both; }
+
+/* Handoff to the page: the nav fades in where the row was; hero content rises into place
+   (transform only, so the text still counts as painted from the first frame). */
+.intro-on .nav { animation: intro-nav var(--intro-nav-dur) var(--intro-ease-fade) var(--intro-nav-delay) both; }
+.intro-on .hero__captions,
+.intro-on .hero__title,
+.intro-on .hero__foot { animation: intro-settle var(--intro-settle-dur) var(--ease-out) var(--intro-out-delay) both; }
+.intro-on .hero__title { animation-delay: calc(var(--intro-out-delay) + 80ms); }
+.intro-on .hero__foot { animation-delay: calc(var(--intro-out-delay) + 160ms); }
+.intro-on.intro-skip :is(.nav, .hero__captions, .hero__title, .hero__foot) { animation: none; }
 .intro__mark { width: var(--intro-mark); height: var(--intro-mark); flex: none; }
 @media (min-width: 900px) {
   .intro__row { padding-inline: calc(var(--nav-inset) + 20px); }
@@ -506,13 +534,13 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   .intro__half--r { padding-left: 24px; }
 }
 
-/* Headline decrypt (main.js): each letter keeps its real width but is drawn as a random character,
+/* Decrypt (decrypt.js; the hero name and every title): each letter keeps its real width but is drawn as a random character,
    dimmed, until it locks in, left to right. The real text is painted from the first frame (an early LCP). */
 .hero__l1 { --dc-color: var(--text); }
 .hero__l2 { --dc-color: var(--text-2); }
-.hero__title .dc { position: relative; }
-.hero__title .dc.is-scr { color: transparent; }
-.hero__title .dc.is-scr::after {
+.dc { position: relative; }
+.dc.is-scr { color: transparent; }
+.dc.is-scr::after {
   content: attr(data-s);
   content: attr(data-s) / "";             /* not read out by screen readers */
   position: absolute;
@@ -522,11 +550,15 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   color: var(--dc-color);
   opacity: var(--decrypt-dim);
 }
+.dc-hide, .dc-hide * { color: transparent !important; }   /* a title while its canvas decrypt runs */
+.dc-canvas { position: absolute; pointer-events: none; }
 .intro-on .hero__tag { animation: intro-fade-in 500ms var(--ease-out) var(--intro-decrypt-end) both; }
 .intro-on .hero [data-resolve] { animation: intro-fade-in 400ms var(--ease-out) var(--intro-decrypt-end) both; }   /* captions appear as they resolve */
 .intro-on.intro-skip :is(.hero__tag, .hero [data-resolve]) { animation: none; }
 
 @keyframes intro-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes intro-nav { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes intro-settle { from { transform: translateY(24px); } to { transform: none; } }
 @keyframes intro-out { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
 @keyframes intro-rise {
   from { transform: translateY(calc(50vh - var(--nav-inset) - var(--nav-h) / 2 - 50%)); }

@@ -1,9 +1,11 @@
 /* =====================================================================
    page.js: everything below the hero.
-   Fade-up on entering the viewport, terminal typing and cursor,
+   Fade-up on entering the viewport, title decrypt, terminal typing and cursor,
    statement reading reveal, video playback rules.
    No scroll listeners: only IntersectionObserver and CSS.
    ===================================================================== */
+
+import { decryptTitle } from './decrypt.js';
 
 /* ---------- TIMING CONSTANTS ---------- */
 const PAGE = {
@@ -17,6 +19,10 @@ const PAGE = {
   statementGroups: 3,     // fallback without scroll-driven animations
   statementAt: 0.4,
   panelAt: 0.25,          // visible share that plays the wide video
+  titleDelayMs: 120,      // titles: scrambling starts on entry, locking starts this much later
+  titleMsPerChar: 40,     // titles: decrypt time grows with length, between the two limits below
+  titleMinMs: 900,
+  titleMaxMs: 1800,
 };
 /* ------------------------------------- */
 
@@ -128,6 +134,21 @@ function initStatement() {
   io.observe(el);
 }
 
+/* ---------- Titles decrypt as they come into view ---------- */
+function initTitles() {
+  if (reduced || !('IntersectionObserver' in window)) return;
+  const titles = [...document.querySelectorAll('main h2, main h3')];
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      io.unobserve(e.target);
+      const len = e.target.textContent.replace(/\s/g, '').length;
+      decryptTitle(e.target, Math.min(PAGE.titleMaxMs, Math.max(PAGE.titleMinMs, len * PAGE.titleMsPerChar)), PAGE.titleDelayMs);
+    }
+  }, { threshold: PAGE.revealAt });
+  titles.forEach((el) => io.observe(el));
+}
+
 /* ---------- Videos: at most one plays at any moment ---------- */
 function initVideos() {
   const slots = [...document.querySelectorAll('[data-video]')]
@@ -194,5 +215,6 @@ export function initPage() {
   initReveal();
   initTerminal();
   initStatement();
+  initTitles();
   initVideos();
 }
