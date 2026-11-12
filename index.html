@@ -17,11 +17,11 @@
   <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/geist-mono-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/css/site.css?v=20261112c">
-  <link rel="modulepreload" href="assets/js/sphere.js?v=20261112c">
-  <link rel="modulepreload" href="assets/js/page.js?v=20261112c">
+  <link rel="stylesheet" href="assets/css/site.css?v=20261112f">
+  <link rel="modulepreload" href="assets/js/sphere.js?v=20261112f">
+  <link rel="modulepreload" href="assets/js/page.js?v=20261112f">
   <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!location.hash){d.classList.add('intro-on');if('scrollRestoration' in history)history.scrollRestoration='manual'}}catch(e){}})();</script>
-  <script type="module" src="assets/js/main.js?v=20261112c"></script>
+  <script type="module" src="assets/js/main.js?v=20261112f"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -122,8 +122,9 @@
           <p class="term__line" data-term-line><span class="term__prompt">jorge@gdl:~$</span> <span class="sr-only">ls projects/</span><span class="term__cmd" aria-hidden="true" data-term-cmd>ls projects/</span></p>
           <ol class="term__rows" aria-label="Project index">
             <li><a class="term__row" href="#synthia"><span class="term__n">01</span><span class="term__name">Synthia:<span class="term__desc"> real-time AI voice detection</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
-            <li><a class="term__row" href="#first-7102"><span class="term__n">02</span><span class="term__name">FIRST Robotics 7102:<span class="term__desc"> autonomous control</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
-            <li><a class="term__row" href="#arm"><span class="term__n">03</span><span class="term__name">6-DOF robotic arm:<span class="term__desc"> inverse kinematics</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
+            <li><a class="term__row" href="#autexa"><span class="term__n">02</span><span class="term__name">Autexa:<span class="term__desc"> customer follow-up CRM</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
+            <li><a class="term__row" href="#first-7102"><span class="term__n">03</span><span class="term__name">FIRST Robotics 7102:<span class="term__desc"> autonomous control</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
+            <li><a class="term__row" href="#arm"><span class="term__n">04</span><span class="term__name">6-DOF robotic arm:<span class="term__desc"> inverse kinematics</span></span><span class="term__go" aria-hidden="true">→</span></a></li>
           </ol>
           <p class="term__line term__line--end" aria-hidden="true" data-term-end><span class="term__prompt">jorge@gdl:~$</span> <span class="term__cursor" data-term-cursor></span></p>
         </div>
@@ -157,6 +158,26 @@
               </div>
               <ul class="tech" aria-label="Tech used"><li>python</li><li>linux</li><li>cloudflare tunnels</li><li>xgboost</li><li>fastapi</li><li>containers</li></ul>
               <p class="project__links"><a class="tlink" href="https://github.com/jsencinas/Synthia_hackmty26" rel="noopener">Code on GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></p>
+            </div>
+          </article>
+
+          <article class="project has-marks project--wide project--flip" id="autexa" aria-labelledby="autexa-title" data-reveal>
+            <div class="project__media media media--empty">
+              <span class="placeholder">[ PLACEHOLDER: screenshot of the admin dashboard ]</span>
+            </div>
+            <!-- Draft from the repo README and Jorge's own description of his role, for his review -->
+            <div class="project__body">
+              <p class="project__meta caption">Client project · Autexa <span class="placeholder">[ PLACEHOLDER: dates ]</span></p>
+              <h3 class="project__title" id="autexa-title">Autexa: customer follow-up CRM</h3>
+              <p class="project__text">I developed and deployed the whole system for a client. After each service, it sends the customer a short WhatsApp satisfaction survey from the company's own number and shows the results to the business.</p>
+              <p class="project__text">An employee photographs the printed inspection form and a local vision model reads it; they check the data and confirm. Replies are read by simple rules first and by a local LLM for the rest. Unsure ratings go to a review queue, and opt-outs are honored in any wording.</p>
+              <ul class="project__notes">
+                <li>The company number stays a human channel: the bot only sends surveys and steps back as soon as an employee joins the chat.</li>
+                <li>An admin section with live charts, the review queue, the opt-out list and settings, plus a monthly email report.</li>
+                <li>Every webhook call is checked against Meta's signature; unsigned or wrongly signed requests are rejected.</li>
+              </ul>
+              <ul class="tech" aria-label="Tech used"><li>python</li><li>fastapi</li><li>sqlalchemy</li><li>ollama</li><li>whatsapp cloud api</li></ul>
+              <p class="project__links"><a class="tlink" href="https://github.com/jsencinas/autexa-customer-follow-up" rel="noopener">Code on GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></p>
             </div>
           </article>
 
@@ -203,10 +224,6 @@
         <div class="more" data-reveal>
           <h3 class="more__title caption">More on GitHub</h3>
           <ul class="more__list">
-            <li><a class="more__row" href="https://github.com/jsencinas/autexa-customer-follow-up" rel="noopener">
-              <span class="more__name">autexa-customer-follow-up</span>
-              <span class="more__desc">Client project: I developed and deployed the whole system. It sends a WhatsApp satisfaction survey after each service. A local vision model reads the printed inspection form, a local LLM reads the replies, and opt-outs are honored in any wording.</span>
-              <span class="more__lang caption">python</span><span class="arrow" aria-hidden="true">↗</span></a></li>
             <li><a class="more__row" href="https://github.com/jsencinas/dotfiles" rel="noopener">
               <span class="more__name">dotfiles</span>
               <span class="more__desc">My Linux setup: Neovim, Zsh, Tmux and Ghostty configs, managed with GNU Stow.</span>

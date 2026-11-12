@@ -3,9 +3,9 @@
    Intro timings come from CSS custom properties (site.css, "intro").
    Sections below the hero live in page.js.
    ===================================================================== */
-import { initSphere } from './sphere.js?v=20261112c';
-import { initPage } from './page.js?v=20261112c';
-import { prepareDecrypt, runDecrypt } from './decrypt.js?v=20261112c';
+import { initSphere } from './sphere.js?v=20261112f';
+import { initPage } from './page.js?v=20261112f';
+import { prepareDecrypt, runDecrypt } from './decrypt.js?v=20261112f';
 
 /* ---------- CAPTION RESOLVE CONSTANTS ---------- */
 const RESOLVE = {
@@ -105,9 +105,9 @@ function initHero() {
   const lines = [...document.querySelectorAll('.hero__l1, .hero__l2')].map(prepareDecrypt);
 
   // Times are from navigation start (performance.now), the same clock the CSS animations follow.
-  const outDelay = cssMs('--intro-out-delay', 2900);
-  const outDur = cssMs('--intro-out-dur', 700);
-  const decryptAt = cssMs('--intro-decrypt-delay', 3250);
+  const outDelay = cssMs('--intro-out-delay', 2560);
+  const outDur = cssMs('--intro-out-dur', 620);
+  const decryptAt = cssMs('--intro-decrypt-delay', 2860);
   const decryptDur = cssMs('--intro-decrypt-dur', 1000);
   const decryptStagger = cssMs('--intro-decrypt-stagger', 250);
   const decryptEnd = decryptAt + decryptDur + decryptStagger;

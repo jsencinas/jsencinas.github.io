@@ -118,20 +118,20 @@
      fade 567 ms, split 1267 ms, rise 733 ms, each starting right after the last. */
   --intro-ease-fade: cubic-bezier(.625, .02, .4, 1);
   --intro-ease-move: cubic-bezier(.9, .05, .175, .95);   /* slow start, fast middle, long soft landing */
-  --intro-in-delay: 150ms;        /* the name fades in at the center */
-  --intro-in-dur: 610ms;
-  --intro-split-delay: 760ms;     /* the words slide to the edges as the hairlines grow */
-  --intro-split-dur: 1350ms;
-  --intro-rule-fade-dur: 700ms;   /* the hairlines fade in during the first half of the split */
-  --intro-rise-delay: 2110ms;     /* the row rises to the nav */
-  --intro-rise-dur: 800ms;
-  --intro-out-delay: 2900ms;      /* the row lands: it fades, the dark layer lifts, the sphere starts to form */
-  --intro-out-dur: 700ms;
-  --intro-row-out-dur: 300ms;
-  --intro-nav-delay: 3100ms;      /* the nav fades in once the row is gone (they share the same spot) */
-  --intro-nav-dur: 600ms;
-  --intro-settle-dur: 1100ms;     /* hero content rises into place as the dark layer lifts */
-  --intro-decrypt-delay: 3250ms;  /* the name, scrambled since the layer lifted, decrypts left to right */
+  --intro-in-delay: 130ms;        /* the name fades in at the center */
+  --intro-in-dur: 540ms;
+  --intro-split-delay: 670ms;     /* the words slide to the edges as the hairlines grow */
+  --intro-split-dur: 1190ms;
+  --intro-rule-fade-dur: 620ms;   /* the hairlines fade in during the first half of the split */
+  --intro-rise-delay: 1860ms;     /* the row rises to the nav */
+  --intro-rise-dur: 700ms;
+  --intro-out-delay: 2560ms;      /* the row lands: it fades, the dark layer lifts, the sphere starts to form */
+  --intro-out-dur: 620ms;
+  --intro-row-out-dur: 260ms;
+  --intro-nav-delay: 2740ms;      /* the nav fades in once the row is gone (they share the same spot) */
+  --intro-nav-dur: 530ms;
+  --intro-settle-dur: 970ms;      /* hero content rises into place as the dark layer lifts */
+  --intro-decrypt-delay: 2860ms;  /* the name, scrambled since the layer lifted, decrypts left to right */
   --intro-decrypt-dur: 1000ms;    /* per line */
   --intro-decrypt-stagger: 250ms; /* the second line starts this much later */
   --intro-decrypt-end: calc(var(--intro-decrypt-delay) + var(--intro-decrypt-dur) + var(--intro-decrypt-stagger));
@@ -342,7 +342,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .tlink:hover .tlink__arrow { transform: translate(2px, -2px); }
 
 /* ---------- 6. Nav ---------- */
-.mark { width: 20px; height: 20px; flex: none; }
+.mark { width: 24px; height: 24px; flex: none; }
 .mark__bg { fill: var(--bg); }
 .mark__glyph { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: square; }
 
@@ -377,7 +377,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .nav__brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;    /* with the 24px icon, the name stays where it was with the 20px one */
   min-height: 44px;
   color: var(--text);
   font: 500 var(--fs-ui) / 1 var(--font-sans);
@@ -793,7 +793,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   }
   :is(#projects, #skills, #contact) > .container > * { grid-column: 1 / -1; }
   :is(#projects, #skills, #contact) > .container > .section__title { grid-column: 1 / span 5; }
-  :is(#projects, #skills, #contact) > .container > :is(.term, .ls, .edu, .contact, .more) { grid-column: 6 / -1; }
+  :is(#projects, #skills, #contact) > .container > :is(.term, .ls, .edu, .contact) { grid-column: 6 / -1; }
   :is(#projects, #skills, #contact) > .container > :is(.term, .ls, .contact) { margin-top: var(--split-top); }
 }
 
@@ -838,6 +838,14 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .media__poster { transition: opacity var(--t-video) linear; }
 .media.is-playing .media__poster { opacity: 0; }
+/* a slot still waiting for its image: the placeholder sits in the middle */
+.media--empty .placeholder {
+  position: absolute;
+  top: 50%; left: 50%;
+  max-width: calc(100% - 32px);
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
 
 /* --- Terminal index --- */
 .term {
@@ -1020,6 +1028,12 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   .project--wide .stats__row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--grid-gap); }
   .project--wide .tech { grid-row: 7; align-self: start; margin-top: 6px; }
   .project--wide .project__links { grid-row: 8; align-self: end; margin-bottom: 16px; }
+  /* Autexa: the same card mirrored, write-up on the left and the image on the right */
+  .project--flip .project__body > * { grid-column: 1 / span 5; margin: 0 0 0 16px; }
+  .project--flip .project__meta { margin-top: 16px; }
+  .project--flip .project__links { margin-bottom: 16px; }
+  .project--flip .tech { margin-top: 6px; }
+  .project--flip .project__media { grid-column: 6 / -1; }
 }
 
 /* --- Statement: words go from dim to bright while scrolling --- */
