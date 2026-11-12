@@ -551,7 +551,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   opacity: var(--decrypt-dim);
 }
 .dc-hide, .dc-hide * { color: transparent !important; }   /* a title while its canvas decrypt runs */
-.dc-canvas { position: absolute; pointer-events: none; }
+.dc-canvas { position: absolute; max-width: none; pointer-events: none; }   /* wider than its title on purpose (8px each side), so never squeezed */
 .intro-on .hero__tag { animation: intro-fade-in 500ms var(--ease-out) var(--intro-decrypt-end) both; }
 .intro-on .hero [data-resolve] { animation: intro-fade-in 400ms var(--ease-out) var(--intro-decrypt-end) both; }   /* captions appear as they resolve */
 .intro-on.intro-skip :is(.hero__tag, .hero [data-resolve]) { animation: none; }

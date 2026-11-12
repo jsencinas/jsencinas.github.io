@@ -89,20 +89,31 @@ export function runDecrypt(jobs, at, dur, stagger = 0) {
 
 // Titles: the same effect drawn on a small canvas over the title, so no per-letter elements
 // exist while the page scrolls. Letter positions are measured once, when it starts.
+// A settled letter is drawn on the text's own baseline at the exact spot the page puts it,
+// so nothing moves when the canvas is swapped for the real text.
 export function decryptTitle(el, dur, delay = 0) {
   const box = el.getBoundingClientRect();
   const pad = 8, chars = [];
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   const range = document.createRange();
+  const m = document.createElement('canvas').getContext('2d'), ascent = {};
   while (walker.nextNode()) {
     const node = walker.currentNode, cs = getComputedStyle(node.parentElement);
+    const font = cs.font;
+    if (!(font in ascent)) { m.font = font; ascent[font] = m.measureText('Hg').fontBoundingBoxAscent; }
+    m.font = font;
     for (let i = 0; i < node.data.length; i++) {
       const ch = node.data[i];
       if (/\s/.test(ch)) continue;
       range.setStart(node, i); range.setEnd(node, i + 1);
       const r = range.getClientRects()[0];
       if (!r) continue;
-      chars.push({ ch, x: r.left - box.left + r.width / 2 + pad, y: r.top - box.top + r.height / 2 + pad, font: cs.font, color: cs.color, s: scrambleFor(ch) });
+      const x = r.left - box.left + pad;
+      chars.push({
+        ch, x, mid: x + m.measureText(ch).width / 2,          // left edge, and the middle for random letters
+        y: r.top - box.top + pad + ascent[font],              // the baseline: the text box top plus the font's ascent
+        font, color: cs.color, s: scrambleFor(ch),
+      });
     }
   }
   if (!chars.length) return;
@@ -115,8 +126,7 @@ export function decryptTitle(el, dur, delay = 0) {
   canvas.style.cssText = `left:${-pad}px;top:${-pad}px;width:${box.width + pad * 2}px;height:${box.height + pad * 2}px`;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.textBaseline = 'alphabetic';
   if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
   el.append(canvas);
   el.classList.add('dc-hide');
@@ -136,7 +146,8 @@ export function decryptTitle(el, dur, delay = 0) {
       if (c.font !== font) { ctx.font = font = c.font; }
       if (c.color !== color) { ctx.fillStyle = color = c.color; }
       ctx.globalAlpha = locked ? 1 : dim;
-      ctx.fillText(locked ? c.ch : c.s, c.x, c.y);
+      if (locked) { ctx.textAlign = 'left'; ctx.fillText(c.ch, c.x, c.y); }
+      else { ctx.textAlign = 'center'; ctx.fillText(c.s, c.mid, c.y); }
     }
     if (left) requestAnimationFrame(frame);
     else { canvas.remove(); el.classList.remove('dc-hide'); }
