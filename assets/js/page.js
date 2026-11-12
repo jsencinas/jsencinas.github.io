@@ -149,11 +149,11 @@ function initTitles() {
   titles.forEach((el) => io.observe(el));
 }
 
-/* ---------- The spinning padlock: its module loads only when the statement gets close ---------- */
+/* ---------- The ghost: its module loads only when the statement gets close ---------- */
 function initArt() {
   const canvas = document.querySelector('.statement__art');
   if (!canvas) return;
-  const load = () => import('./spinner.js').then((m) => m.initSpinner(canvas));
+  const load = () => import('./ghost.js').then((m) => m.initGhost(canvas));
   if (!('IntersectionObserver' in window)) { load(); return; }
   const io = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;

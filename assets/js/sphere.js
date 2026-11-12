@@ -52,9 +52,9 @@ const SPHERE = {
   burstDim: 0.35,           // share of alpha lost at full scatter
 
   // Textures: after each burst the dust rebuilds the sphere with the next one, then the list repeats.
-  // dots: the even lattice (first) · rock: a lumpy surface · dust: fine loose grain
+  // rock: a lumpy surface (first) · dust: fine loose grain · dots: the even lattice
   // terrain: dense patches and sparse areas · bands: turbulent stripes, like a gas planet
-  figures: ['dots', 'rock', 'dust', 'terrain', 'bands'],
+  figures: ['rock', 'dust', 'terrain', 'bands', 'dots'],
   rock: { lumps: 0.3, detail: 0.08, scale: 0.86, light: [-0.55, 0.65, 0.5], shade: 0.08 }, // shade: density on the dark side
   dust: { jitter: 0.3 },                   // shell thickness, in sphere radii
   terrain: { freq: 1.5, floor: 0.03 },     // floor: density left in the sparse areas
@@ -263,9 +263,9 @@ export function initSphere(canvas) {
       P[i] = rnd() * TAU;
     }
     // Figure positions: shell dots take each figure's shape, loose dots stay where they are
-    // Only the first is built now; the others are built in idle time just before they are needed.
+    // Every figure, the first included, is built in idle slices; draw() finishes one at once if it is needed sooner.
     FX = []; FY = []; FZ = []; nShellNow = nShell; building = null;
-    ensureFigure(0);
+    prebuild(0);
     buf = kinds.map((k) => k.alpha.map(() => new Float32Array(n * 2)));
     len = kinds.map((k) => k.alpha.map(() => 0));
     fullClear = true;
