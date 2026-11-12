@@ -342,7 +342,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .tlink:hover .tlink__arrow { transform: translate(2px, -2px); }
 
 /* ---------- 6. Nav ---------- */
-.mark { width: 24px; height: 24px; flex: none; }
+.mark { width: 28px; height: 28px; flex: none; }
 .mark__bg { fill: var(--bg); }
 .mark__glyph { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: square; }
 
@@ -377,7 +377,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .nav__brand {
   display: inline-flex;
   align-items: center;
-  gap: 6px;    /* with the 24px icon, the name stays where it was with the 20px one */
+  gap: 8px;
   min-height: 44px;
   color: var(--text);
   font: 500 var(--fs-ui) / 1 var(--font-sans);

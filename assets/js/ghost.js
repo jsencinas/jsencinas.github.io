@@ -9,10 +9,9 @@
 
    It plays a rotating set of small scenes, most of them with a face:
      boo     crouch, pop up, wide eyes and an open mouth
-     happy   eyes squeeze into arcs, a smile, a few little hops
      wink    one eye closes, head tilted
      sleepy  lids droop, it sinks, z's float up, then it wakes with a start
-     dizzy   a few fast loops, then spiral eyes and a wobble
+     dizzy   a few fast loops, then a woozy wobble with the shine circling in both eyes
      vanish  dissolves, reappears somewhere else, surprised
      dash    narrowed eyes and a wind-up, a dash across, a look back
    plus calm ones in between (float somewhere, look around, sink and rise).
@@ -54,14 +53,14 @@ const GHOST = {
 // How often each scene is picked (never the same one twice in a row).
 const WEIGHTS = {
   wander: 2.5, look: 1.2, dip: 0.8,
-  boo: 1.4, happy: 1.4, wink: 1, sleepy: 1, dizzy: 1.1, vanish: 1.2, dash: 1.3,
+  boo: 1.5, wink: 1, sleepy: 1, dizzy: 1.1, vanish: 1.2, dash: 1.3,
 };
 // Expressions, each eased by a spring: [stiffness, damping ratio]
 const FACE_SPRINGS = {
-  wide: [90, 0.55], grow: [45, 0.35], happy: [70, 0.8], angry: [70, 0.8], lid: [9, 1],
+  wide: [90, 0.55], grow: [45, 0.35], angry: [70, 0.8], lid: [9, 1],
   dizzy: [40, 0.8], fade: [10, 1], wink: [140, 0.9], tilt: [30, 0.55],
 };
-const NEUTRAL = { wide: 0, grow: 0, happy: 0, angry: 0, lid: 0, dizzy: 0, fade: 1, wink: 0, tilt: 0 };
+const NEUTRAL = { wide: 0, grow: 0, angry: 0, lid: 0, dizzy: 0, fade: 1, wink: 0, tilt: 0 };
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((b) => b / 16 - 0.47);
 /* -------------------------------------- */
 
@@ -144,20 +143,6 @@ export function initGhost(canvas) {
         { to: [x, y + 0.12], k: 12, z: 1, look: [0, 0], ms: 320 },            // crouch
         { to: [x, y - 0.3], k: 14, z: 0.45, look: [0, 0], face: { wide: 1, grow: 1 }, ms: 1000 },
         { to: [x, y], k: 5, z: 0.8, face: { wide: 0, grow: 0 }, ms: 800 },
-      ];
-    },
-    happy: () => {
-      const x = px.x, y = clamp(py.x, -by * 0.5, by), hops = [];
-      for (let i = 0; i < 3; i++) {
-        const side = i % 2 ? 1 : -1;
-        hops.push({ to: [x + side * 0.08, y - 0.2], k: 40, z: 0.55, look: [0, -0.2], ms: 210 });
-        hops.push({ to: [x, y], k: 40, z: 0.55, look: [0, -0.2], face: { tilt: side * 0.1 }, ms: 210 });
-      }
-      return [
-        { face: { happy: 1 }, look: [0, -0.2], ms: 350 },
-        ...hops,
-        { face: { tilt: 0 }, look: [0, -0.2], ms: 700 },
-        { face: { happy: 0 }, ms: 400 },
       ];
     },
     wink: () => [
@@ -329,7 +314,6 @@ export function initGhost(canvas) {
   // ex, ey: position inside the eye, -1..1 across the socket; inner: 1 toward the nose
   function eyeDark(ex, ey, inner, f) {
     if (ex * ex + ey * ey >= 1) return false;
-    if (f.happy > 0.5) return ex * ex + (ey - 0.75) ** 2 > 0.95 * 0.95 && ey < 0.1;   // an arc: ^
     if (ey < -1 + f.lid * 1.6) return false;                                             // drooping lid
     if (ey < -1 + f.angry * (0.9 + 0.7 * inner)) return false;                          // a slanted brow
     return true;
@@ -411,16 +395,18 @@ export function initGhost(canvas) {
     }));
     // shines: one cell per eye; they circle when dizzy
     const glints = [];
-    const showGlint = blink > 0.6 && f.happy < 0.5 && f.lid < 0.6 && f.angry < 0.5 && f.fade > 0.7;
+    const showGlint = blink > 0.6 && f.lid < 0.6 && f.angry < 0.5 && f.fade > 0.7;
     for (const e of eyes) {
       if (!showGlint || (e.side === 1 && f.wink > 0.4)) continue;
       let gu = ew * 0.3, gv = -e.eh * 0.4;
-      if (f.dizzy > 0.3) { const a = time * 0.011 * e.side; gu = Math.cos(a) * ew * 0.55; gv = Math.sin(a) * e.eh * 0.55; }
+      if (f.dizzy > 0.3) {   // both eyes circle together, the same way
+        const a = time * 0.011;
+        gu = Math.cos(a) * ew * 0.55; gv = Math.sin(a) * e.eh * 0.55;
+      }
       const [gx, gy] = toScreen(e.cx + gu, e.cy + gv);
       glints.push(Math.floor(gy / chH) * 100000 + Math.floor(gx / cw));
     }
     const mouthO = f.wide > 0.15, mw = 0.12 * f.wide, mh = 0.15 * f.wide;
-    const smile = f.happy > 0.3, smw = 0.2 * f.happy, smh = 0.14 * f.happy;
     const nRamp = G.ramp.length, n1 = nRamp - 1;
     const fade = f.fade;
 
@@ -443,13 +429,12 @@ export function initGhost(canvas) {
             if (eyeDark(ex, ey, -eye.side * ex, f)) dark = true;
           }
           if (mouthO && ((u - ox * 0.8) / mw) ** 2 + ((v - 0.33 - oy) / mh) ** 2 < 1) dark = true;
-          if (smile && v > 0.2 + oy && ((u - ox * 0.8) / smw) ** 2 + ((v - 0.2 - oy) / smh) ** 2 < 1) dark = true;
           const cell = (r0 + r) * 100000 + c0 + c;
           if (glints.includes(cell)) b = '@';
           else if (!dark) {
             // brighter in the middle and to the upper left, darker around the eyes, dithered
             let lum = Math.min(1, d * 4.5) * (0.8 + 0.14 * (-0.55 * u - 0.45 * v));
-            if (near < 2 && f.happy < 0.5) lum -= 0.25 * (2 - near);
+            if (near < 2) lum -= 0.25 * (2 - near);
             lum += dither * 0.9 / n1;
             b = G.ramp[clamp(Math.round(lum * n1), 1, n1)];
           }

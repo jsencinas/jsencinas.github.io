@@ -5,7 +5,7 @@
    No scroll listeners: only IntersectionObserver and CSS.
    ===================================================================== */
 
-import { decryptTitle } from './decrypt.js?v=20261112f';
+import { decryptTitle } from './decrypt.js?v=20261112h';
 
 /* ---------- TIMING CONSTANTS ---------- */
 const PAGE = {
@@ -153,7 +153,7 @@ function initTitles() {
 function initArt() {
   const canvas = document.querySelector('.ghostterm__screen');
   if (!canvas) return;
-  const load = () => import('./ghost.js?v=20261112f').then((m) => m.initGhost(canvas));
+  const load = () => import('./ghost.js?v=20261112h').then((m) => m.initGhost(canvas));
   if (!('IntersectionObserver' in window)) { load(); return; }
   const io = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
