@@ -838,6 +838,9 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .media__poster { transition: opacity var(--t-video) linear; }
 .media.is-playing .media__poster { opacity: 0; }
+/* where a still image anchors when the box crops it */
+.media--synthia .media__poster { object-position: 57% 50%; }   /* the team stands right of center */
+.media--shot .media__poster { object-position: left top; }      /* screenshots keep the nav bar and title */
 /* a slot still waiting for its image: the placeholder sits in the middle */
 .media--empty .placeholder {
   position: absolute;
@@ -1221,6 +1224,22 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .role__body { display: grid; gap: 6px; }
 .role__org { font: 400 var(--fs-h3) / 1.15 var(--font-sans); letter-spacing: -0.02em; }
 .role__text { color: var(--text-2); max-width: 62ch; margin-top: 6px; }
+/* two photos under a role's text, in the same 8 px tray radius as the project media */
+.role__media {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-width: 520px;
+  margin-top: 18px;
+}
+.role__media img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
 @media (min-width: 900px) {
   .role { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--grid-gap); padding-block: 32px; }
   .role__when { grid-column: 1 / span 4; padding-top: 8px; }

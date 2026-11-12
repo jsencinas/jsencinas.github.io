@@ -17,11 +17,11 @@
   <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/geist-mono-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/css/site.css?v=20261112j">
-  <link rel="modulepreload" href="assets/js/sphere.js?v=20261112j">
-  <link rel="modulepreload" href="assets/js/page.js?v=20261112j">
+  <link rel="stylesheet" href="assets/css/site.css?v=20261112k">
+  <link rel="modulepreload" href="assets/js/sphere.js?v=20261112k">
+  <link rel="modulepreload" href="assets/js/page.js?v=20261112k">
   <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!location.hash){d.classList.add('intro-on');if('scrollRestoration' in history)history.scrollRestoration='manual'}}catch(e){}})();</script>
-  <script type="module" src="assets/js/main.js?v=20261112j"></script>
+  <script type="module" src="assets/js/main.js?v=20261112k"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -131,12 +131,8 @@
 
         <div class="projects">
           <article class="project has-marks project--wide" id="synthia" aria-labelledby="synthia-title" data-reveal>
-            <div class="project__media media" data-video="card">
-              <video class="media__video" muted playsinline loop preload="none" width="960" height="540" aria-hidden="true" tabindex="-1">
-                <source src="assets/video/sample-synthia.webm" type="video/webm">
-                <source src="assets/video/sample-synthia.mp4" type="video/mp4">
-              </video>
-              <img class="media__poster" src="assets/video/sample-synthia.webp" width="960" height="540" alt="" loading="lazy" decoding="async">
+            <div class="project__media media media--synthia">
+              <img class="media__poster" src="assets/images/synthia-960.webp" srcset="assets/images/synthia-960.webp 960w, assets/images/synthia-1600.webp 1600w" sizes="(min-width: 1200px) 58vw, 100vw" width="960" height="540" alt="The Synthia team on stage at HackMTY 2026" loading="lazy" decoding="async">
             </div>
             <!-- From 1200 px the children below are placed on the card grid (site.css, "Synthia"):
                  keep at most 5 items before .stats. For a longer write-up, wrap them in one element. -->
@@ -146,7 +142,7 @@
               <!-- Draft from the repo README and Jorge's HackMTY post, for his review -->
               <p class="project__text">Built for HackMTY's Reto Altur, a real problem for banking contact centers: tell in real time whether a call comes from a person or an AI voice agent. It looks at how the conversation unfolds, how the voice behaves and how the audio arrives over the phone line.</p>
               <p class="project__text">A real-time detection pipeline with three layers: turn-taking dynamics (51 features), acoustic signal metrics (58 features) and an out-of-fold stacked ensemble of XGBoost and logistic regression.</p>
-              <p class="project__text">Served from a containerized FastAPI endpoint on a Linux server, exposed through Cloudflare Tunnels for continuous uptime and live evaluation. <span class="placeholder">[ PLACEHOLDER: your role on the team ]</span></p>
+              <p class="project__text">Served from a containerized FastAPI endpoint on a Linux server, exposed through Cloudflare Tunnels for continuous uptime and live evaluation. My part: I developed the cascade model and set up the Linux server and its security.</p>
               <div class="stats">
                 <p class="caption">Competition benchmarks</p>
                 <dl class="stats__row">
@@ -162,12 +158,12 @@
           </article>
 
           <article class="project has-marks project--wide project--flip" id="autexa" aria-labelledby="autexa-title" data-reveal>
-            <div class="project__media media media--empty">
-              <span class="placeholder">[ PLACEHOLDER: screenshot of the admin dashboard ]</span>
+            <div class="project__media media media--shot">
+              <img class="media__poster" src="assets/images/autexa-960.webp" srcset="assets/images/autexa-960.webp 960w, assets/images/autexa-1600.webp 1600w" sizes="(min-width: 1200px) 58vw, 100vw" width="960" height="540" alt="Autexa's admin settings page: survey sending hours for each day and the monthly email report" loading="lazy" decoding="async">
             </div>
             <!-- Draft from the repo README and Jorge's own description of his role, for his review -->
             <div class="project__body">
-              <p class="project__meta caption">Client project · Autexa <span class="placeholder">[ PLACEHOLDER: dates ]</span></p>
+              <p class="project__meta caption">Client project · Autexa · Oct – Dec 2026</p>
               <h3 class="project__title" id="autexa-title">Autexa: customer follow-up CRM</h3>
               <p class="project__text">I developed and deployed the whole system for a client. After each service, it sends the customer a short WhatsApp satisfaction survey from the company's own number and shows the results to the business.</p>
               <p class="project__text">An employee photographs the printed inspection form and a local vision model reads it; they check the data and confirm. Replies are read by simple rules first and by a local LLM for the rest. Unsure ratings go to a review queue, and opt-outs are honored in any wording.</p>
@@ -184,21 +180,21 @@
           <article class="project has-marks project--main" id="first-7102" aria-labelledby="first-title" data-reveal>
             <div class="project__media media" data-video="card">
               <video class="media__video" muted playsinline loop preload="none" width="960" height="540" aria-hidden="true" tabindex="-1">
-                <source src="assets/video/sample-robotics.webm" type="video/webm">
-                <source src="assets/video/sample-robotics.mp4" type="video/mp4">
+                <source src="assets/video/frc-7102.webm" type="video/webm">
+                <source src="assets/video/frc-7102.mp4" type="video/mp4">
               </video>
-              <img class="media__poster" src="assets/video/sample-robotics.webp" width="960" height="540" alt="" loading="lazy" decoding="async">
+              <img class="media__poster" src="assets/images/first-960.webp" srcset="assets/images/first-960.webp 960w, assets/images/first-1600.webp 1600w" sizes="(min-width: 900px) 46vw, 100vw" width="960" height="540" alt="Robot 7102 on the field at a FIRST Robotics Competition event" loading="lazy" decoding="async">
             </div>
             <div class="project__body">
               <p class="project__meta caption">Team Daedalus 7102 · Apr 2023 – Jun 2025</p>
-              <h3 class="project__title" id="first-title">FIRST Robotics 7102: autonomous control</h3>
+              <h3 class="project__title" id="first-title">FIRST Robotics 7102</h3>
               <p class="project__text">Lead programmer and primary driver. I built the autonomous control systems, led software integration for the competition hardware, and drove the robot in live matches.</p>
               <ul class="project__notes">
                 <li>Represented the team at the 2024 FIRST World Championship in Houston.</li>
                 <li>Key contributor to the Autonomous Award (2024) and the Innovation in Control Award (2025).</li>
               </ul>
               <ul class="tech" aria-label="Tech used"><li>java</li><li>wpilib</li><li>git</li><li>github</li></ul>
-              <p class="project__links"><span class="placeholder">[ PLACEHOLDER: repo or demo link ]</span></p>
+              <p class="project__links"><a class="tlink" href="https://github.com/Daedalus7102" rel="noopener">Team on GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></p>
             </div>
           </article>
 
@@ -213,7 +209,7 @@
             <div class="project__body">
               <p class="project__meta caption">May – Aug 2024</p>
               <h3 class="project__title" id="arm-title">6-DOF robotic arm: inverse kinematics</h3>
-              <p class="project__text">Maps a target (x, y, z) coordinate to joint motor angles, on top of modular object-oriented C++ libraries for joint interpolation and hardware abstraction. <span class="placeholder">[ PLACEHOLDER: your role, or solo project ]</span></p>
+              <p class="project__text">Maps a target (x, y, z) coordinate to joint motor angles, on top of modular object-oriented C++ libraries for joint interpolation and hardware abstraction. A solo project: I developed all of the software.</p>
               <ul class="tech" aria-label="Tech used"><li>c++</li><li>arduino</li><li>python</li></ul>
               <p class="project__links"><a class="tlink" href="https://github.com/jsencinas/Robotic_arm-Coordinates_based" rel="noopener">Code on GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></p>
             </div>
@@ -296,6 +292,10 @@
                 <h3 class="role__org">Techo Jalisco</h3>
                 <p class="role__title caption">On-site volunteer lead</p>
                 <p class="role__text">Led on-site work on 14 transitional housing units, directing teams of 15 volunteers per build. Took part in two national fundraising campaigns across Jalisco.</p>
+                <div class="role__media">
+                  <img src="assets/images/techo-1-480.webp" srcset="assets/images/techo-1-480.webp 480w, assets/images/techo-1-800.webp 800w" sizes="(min-width: 900px) 256px, 45vw" width="480" height="600" alt="Techo volunteers nailing a wall panel of a transitional house" loading="lazy" decoding="async">
+                  <img src="assets/images/techo-2-480.webp" srcset="assets/images/techo-2-480.webp 480w, assets/images/techo-2-800.webp 800w" sizes="(min-width: 900px) 256px, 45vw" width="480" height="600" alt="A Techo volunteer working on top of a house frame" loading="lazy" decoding="async">
+                </div>
               </div>
             </li>
             <li class="role" data-reveal>
