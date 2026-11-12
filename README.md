@@ -13,6 +13,7 @@ Single-page portfolio. Plain HTML, CSS and vanilla JavaScript, no build step. Se
 - `assets/js/sphere.js`: the hero dot sphere (2D canvas). Every 5 s it crumbles into dust and rebuilds with a different texture: a lit rock, fuzzy dust, terrain patches, turbulent bands and the even dot lattice, then the rock again. `figures` sets the order, each texture has its own entry, `holdMs` and the `burst*` values set the timing. Visual constants are in the block at the top.
 - `assets/fonts/`: self-hosted WOFF2 subsets of Archivo (variable, weights 400 to 500) and Geist Mono (400).
 - `assets/video/`: the project card videos (see below).
+- `assets/docs/Jorge_Enrique_Sánchez_Encinas_CV.pdf`: the CV behind every "Download CV" button. To update it, replace the file with the same name. Keep the phone number out of it (header text, `tel:` links and metadata).
 - `assets/images/`: project and volunteering photos as WebP, each at two widths for `srcset` (see "Photos" below).
 - `media-src/` (gitignored, never published): full-size originals of the photos and footage. They can carry camera and GPS metadata, so only the processed copies in `assets/` go online.
 - `.well-known/security.txt`: RFC 9116 contact file.
