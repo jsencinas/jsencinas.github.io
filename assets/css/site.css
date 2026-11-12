@@ -1025,7 +1025,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 /* --- Statement: words go from dim to bright while scrolling --- */
 .statement { padding-bottom: calc(var(--section-pad) * .5); }
 .statement__inner { display: grid; gap: 24px; align-items: center; }
-.statement__art { width: min(100%, 260px); justify-self: end; }   /* the ghost terminal; above the text on phones */
+.statement__art { width: min(100%, 260px); justify-self: center; }   /* the ghost terminal; centered above the text on phones */
 @media (min-width: 900px) {
   .statement__inner { grid-template-columns: minmax(0, 1fr) clamp(260px, 24vw, 340px); gap: var(--grid-gap); }
   .statement__art { order: 2; width: 100%; }
