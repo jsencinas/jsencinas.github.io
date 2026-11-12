@@ -1224,21 +1224,37 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 .role__body { display: grid; gap: 6px; }
 .role__org { font: 400 var(--fs-h3) / 1.15 var(--font-sans); letter-spacing: -0.02em; }
 .role__text { color: var(--text-2); max-width: 62ch; margin-top: 6px; }
-/* two photos under a role's text, in the same 8 px tray radius as the project media */
+/* A group row (Techo + Techito): the entries stack with a hairline between them and share
+   two photos. Phones: photos under the text, square to keep the row short.
+   From 900 px: photos in the left column (like the About photo), entries on the right,
+   so the photos add no height. */
+.role--group { gap: 20px; }
+.role__entries { display: grid; }
+.role__entry { display: grid; gap: 6px; }
+.role__entry .role__when { margin-bottom: 4px; }
+.role__entry + .role__entry { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
 .role__media {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  max-width: 520px;
-  margin-top: 18px;
 }
 .role__media img {
   width: 100%;
   height: auto;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
+  object-position: 50% 30%;
   border-radius: var(--r-sm);
   background: var(--surface-2);
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  .role__media { max-width: 420px; }
+}
+@media (min-width: 900px) {
+  .role--group .role__entries { grid-column: 6 / span 7; grid-row: 1; }
+  .role--group .role__media { grid-column: 1 / span 4; grid-row: 1; align-self: start; padding-top: 6px; }
+  .role--group .role__media img { aspect-ratio: 4 / 5; }
+  .role__entry .role__when { grid-column: auto; padding-top: 0; }
 }
 @media (min-width: 900px) {
   .role { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--grid-gap); padding-block: 32px; }

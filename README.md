@@ -55,7 +55,7 @@ All in `assets/images/`, WebP, two widths each, lazy-loaded, with metadata strip
 | `synthia-960.webp`, `-1600.webp` | Synthia card (HackMTY 2026 team photo) | 16:9. Above 1200 px the box can crop the sides; `object-position` keeps the team in view. |
 | `autexa-960.webp`, `-1600.webp` | Autexa card (admin settings screenshot) | 16:9 from the top of the page; anchored top left. |
 | `first-960.webp`, `-1600.webp` | FIRST 7102 card, poster over the video | 16:9 |
-| `techo-1-480.webp`, `-800.webp`, `techo-2-*` | Techo row in Leadership, side by side | 4:5 |
+| `techo-1-480.webp`, `-800.webp`, `techo-2-*` | Leadership, shared by the Techo and Techito entries: left column from 900 px, under the text on phones | 4:5 (square on phones) |
 
 Example (16:9 crop, two widths):
 
