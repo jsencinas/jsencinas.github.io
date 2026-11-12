@@ -20,7 +20,6 @@
   <link rel="stylesheet" href="assets/css/site.css">
   <link rel="modulepreload" href="assets/js/sphere.js">
   <link rel="modulepreload" href="assets/js/page.js">
-  <link rel="modulepreload" href="assets/js/decrypt.js">
   <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!location.hash){d.classList.add('intro-on');if('scrollRestoration' in history)history.scrollRestoration='manual'}}catch(e){}})();</script>
   <script type="module" src="assets/js/main.js"></script>
 </head>
@@ -143,7 +142,8 @@
             <div class="project__body">
               <p class="project__meta caption">HackMTY 2026 · Finalist, 4th place · Sep 2026</p>
               <h3 class="project__title" id="synthia-title">Synthia: real-time AI voice detection</h3>
-              <p class="placeholder">[ PLACEHOLDER: what it detects, in plain language ]</p>
+              <!-- Draft from the repo README (Spanish), for Jorge's review -->
+              <p class="project__text">Takes a recorded phone call and tells whether the caller is a human or an AI, from how the conversation unfolds, how the voice behaves and how the audio arrives over the phone line.</p>
               <p class="project__text">A real-time detection pipeline with three layers: turn-taking dynamics (51 features), acoustic signal metrics (58 features) and an out-of-fold stacked ensemble of XGBoost and logistic regression.</p>
               <p class="project__text">Served from a containerized FastAPI endpoint on a Linux server, exposed through Cloudflare Tunnels for continuous uptime and live evaluation. <span class="placeholder">[ PLACEHOLDER: your role on the team ]</span></p>
               <div class="stats">
@@ -156,7 +156,7 @@
                 <p class="placeholder">[ PLACEHOLDER: how these were evaluated: dataset, split, who ran it ]</p>
               </div>
               <ul class="tech" aria-label="Tech used"><li>python</li><li>linux</li><li>cloudflare tunnels</li><li>xgboost</li><li>fastapi</li><li>containers</li></ul>
-              <p class="project__links"><span class="placeholder">[ PLACEHOLDER: demo or repo link ]</span></p>
+              <p class="project__links"><a class="tlink" href="https://github.com/jsencinas/Synthia_hackmty26" rel="noopener">Code on GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></p>
             </div>
           </article>
 
@@ -194,16 +194,32 @@
               <h3 class="project__title" id="arm-title">6-DOF robotic arm: inverse kinematics</h3>
               <p class="project__text">Maps a target (x, y, z) coordinate to joint motor angles, on top of modular object-oriented C++ libraries for joint interpolation and hardware abstraction. <span class="placeholder">[ PLACEHOLDER: your role, or solo project ]</span></p>
               <ul class="tech" aria-label="Tech used"><li>c++</li><li>arduino</li><li>python</li></ul>
-              <p class="project__links"><span class="placeholder">[ PLACEHOLDER: repo or demo link ]</span></p>
+              <p class="project__links"><a class="tlink" href="https://github.com/jsencinas/Robotic_arm-Coordinates_based" rel="noopener">Code on GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></p>
             </div>
           </article>
+        </div>
+
+        <!-- More public repos (descriptions drafted from each README, for Jorge's review) -->
+        <div class="more" data-reveal>
+          <h3 class="more__title caption">More on GitHub</h3>
+          <ul class="more__list">
+            <li><a class="more__row" href="https://github.com/jsencinas/autexa-customer-follow-up" rel="noopener">
+              <span class="more__name">autexa-customer-follow-up</span>
+              <span class="more__desc">Sends a WhatsApp satisfaction survey after each service. A local vision model reads the printed inspection form, a local LLM reads the replies, and opt-outs are honored in any wording.</span>
+              <span class="more__lang caption">python</span><span class="arrow" aria-hidden="true">↗</span></a></li>
+            <li><a class="more__row" href="https://github.com/jsencinas/dotfiles" rel="noopener">
+              <span class="more__name">dotfiles</span>
+              <span class="more__desc">My Linux setup: Neovim, Zsh, Tmux and Ghostty configs, managed with GNU Stow.</span>
+              <span class="more__lang caption">lua</span><span class="arrow" aria-hidden="true">↗</span></a></li>
+          </ul>
         </div>
       </div>
     </section>
 
     <!-- Statement (draft copy, for Jorge's review) -->
     <section class="section statement" aria-label="Statement">
-      <div class="container">
+      <div class="container statement__inner">
+        <canvas class="statement__art" aria-hidden="true"></canvas>
         <p class="statement__text" data-statement>I like software that has to answer right away: a robot with seconds left in a match, a model scoring live audio. Now I want to learn how systems like these hold up when someone tries to break them.</p>
       </div>
     </section>

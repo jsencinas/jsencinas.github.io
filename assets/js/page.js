@@ -149,6 +149,20 @@ function initTitles() {
   titles.forEach((el) => io.observe(el));
 }
 
+/* ---------- The spinning padlock: its module loads only when the statement gets close ---------- */
+function initArt() {
+  const canvas = document.querySelector('.statement__art');
+  if (!canvas) return;
+  const load = () => import('./spinner.js').then((m) => m.initSpinner(canvas));
+  if (!('IntersectionObserver' in window)) { load(); return; }
+  const io = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    io.disconnect();
+    load();
+  }, { rootMargin: '600px 0px' });
+  io.observe(canvas);
+}
+
 /* ---------- Videos: at most one plays at any moment ---------- */
 function initVideos() {
   const slots = [...document.querySelectorAll('[data-video]')]
@@ -216,5 +230,6 @@ export function initPage() {
   initTerminal();
   initStatement();
   initTitles();
+  initArt();
   initVideos();
 }

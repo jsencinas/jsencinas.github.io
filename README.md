@@ -9,6 +9,7 @@ Single-page portfolio. Plain HTML, CSS and vanilla JavaScript, no build step. Se
 - `assets/js/main.js`: intro, phone menu, caption resolve, footer clock, console greeting. The intro plays on every load (not with reduced motion, and not when the URL has a `#section` link); any key, click, wheel or touch skips it. Its timings are the `--intro-*` properties in `site.css`.
 - `assets/js/page.js`: fade-up on scroll, title decrypt, terminal typing and cursor, statement reveal, video playback rules.
 - `assets/js/decrypt.js`: the decrypt effect (random characters that lock into the real text), used by the hero name and every title.
+- `assets/js/spinner.js`: the dot padlock that turns next to the statement. Loaded only when the statement comes near the screen. Visual constants are in the block at the top.
 - `assets/js/sphere.js`: the hero dot sphere (2D canvas). Every 5 s it crumbles into dust and rebuilds with a different texture: the even dot lattice, a lit rock, fuzzy dust, terrain patches, turbulent bands, then the lattice again. `figures` sets the order, each texture has its own entry, `holdMs` and the `burst*` values set the timing. Visual constants are in the block at the top.
 - `assets/fonts/`: self-hosted WOFF2 subsets of Archivo (variable, weights 400 to 500) and Geist Mono (400).
 - `assets/video/`: sample videos and their WebP posters (see below).
