@@ -814,7 +814,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   width: 6px; height: 1px;
   background: var(--muted);
 }
-.project__text .placeholder, .about__text p + p .placeholder { margin-top: 6px; vertical-align: 1px; }
+.project__text .placeholder { margin-top: 6px; vertical-align: 1px; }
 
 .stats {
   display: grid;
@@ -1017,7 +1017,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
   .about__photo { max-width: none; aspect-ratio: 1 / 1; }   /* gutter to gutter on phones, square */
 }
 .about__text { display: grid; gap: 20px; max-width: 62ch; color: var(--text-2); }
-.about__text p:nth-child(2) { color: var(--text); font-size: var(--fs-lead); line-height: 1.5; }
+.about__text p:first-child { color: var(--text); font-size: var(--fs-lead); line-height: 1.5; }
 @media (min-width: 900px) {
   .about { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--grid-gap); }
   .about__photo { grid-column: 1 / span 4; max-width: none; }
