@@ -5,7 +5,7 @@
    No scroll listeners: only IntersectionObserver and CSS.
    ===================================================================== */
 
-import { decryptTitle } from './decrypt.js?v=20261112l';
+import { decryptTitle } from './decrypt.js?v=20261112m';
 
 /* ---------- TIMING CONSTANTS ---------- */
 const PAGE = {
@@ -18,7 +18,6 @@ const PAGE = {
   rowEveryMs: 260,        // between the listing rows
   statementGroups: 3,     // fallback without scroll-driven animations
   statementAt: 0.4,
-  panelAt: 0.25,          // visible share that plays the wide video
   titleDelayMs: 200,      // titles: scrambling starts on entry, locking starts this much later
   titleMsPerChar: 60,     // titles: decrypt time grows with length, between the two limits below
   titleMinMs: 1300,
@@ -105,20 +104,31 @@ function initTerminal() {
 }
 
 /* ---------- Statement ---------- */
+// Wraps each word in a span (inside any inline markup, which is kept) so it can light up.
 function initStatement() {
   const el = document.querySelector('[data-statement]');
   if (!el || reduced) return;
-  const words = el.textContent.trim().split(/\s+/);
-  const last = words.length - 1;
-  el.textContent = '';
-  words.forEach((word, i) => {
-    const s = document.createElement('span');
-    s.className = 'w';
-    s.textContent = word;
+  const words = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const frag = document.createDocumentFragment();
+    for (const part of node.data.split(/(\s+)/)) {
+      if (!part) continue;
+      if (/^\s+$/.test(part)) { frag.append(part); continue; }
+      const s = document.createElement('span');
+      s.className = 'w';
+      s.textContent = part;
+      frag.append(s);
+      words.push(s);
+    }
+    node.replaceWith(frag);
+  }
+  const last = Math.max(1, words.length - 1);
+  words.forEach((s, i) => {
     s.style.setProperty('--p', (i / last).toFixed(3));
     s.dataset.g = String(Math.min(PAGE.statementGroups - 1, Math.floor((i / (last + 1)) * PAGE.statementGroups)));
-    el.append(s);
-    if (i < last) el.append(' ');
   });
 
   if (window.CSS && CSS.supports('animation-timeline: view()')) {
@@ -153,7 +163,7 @@ function initTitles() {
 function initArt() {
   const canvas = document.querySelector('.ghostterm__screen');
   if (!canvas) return;
-  const load = () => import('./ghost.js?v=20261112l').then((m) => m.initGhost(canvas));
+  const load = () => import('./ghost.js?v=20261112m').then((m) => m.initGhost(canvas));
   if (!('IntersectionObserver' in window)) { load(); return; }
   const io = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
@@ -163,10 +173,10 @@ function initArt() {
   io.observe(canvas);
 }
 
-/* ---------- Videos: at most one plays at any moment ---------- */
+/* ---------- Videos: project cards play on hover or focus; at most one at a time ---------- */
 function initVideos() {
   const slots = [...document.querySelectorAll('[data-video]')]
-    .map((el) => ({ el, kind: el.dataset.video, video: el.querySelector('video') }))
+    .map((el) => ({ el, video: el.querySelector('video') }))
     .filter((s) => s.video);
   if (!slots.length) return;
 
@@ -174,16 +184,11 @@ function initVideos() {
   const saveData = navigator.connection && navigator.connection.saveData;
   if (reduced || saveData) return;
 
-  const panel = slots.find((s) => s.kind === 'panel');
-  const cards = slots.filter((s) => s.kind === 'card');
   let current = null;
-  let panelVisible = false;
-
   for (const s of slots) {
     s.video.addEventListener('playing', () => s.el.classList.add('is-playing'));
     s.video.addEventListener('pause', () => s.el.classList.remove('is-playing'));
   }
-
   function play(s) {
     if (current && current !== s) stop(current);
     current = s;
@@ -194,24 +199,13 @@ function initVideos() {
     s.video.pause();
     if (current === s) current = null;
   }
-  function resumePanel() {
-    if (panel && panelVisible && !current && !reducedMq.matches && document.visibilityState === 'visible') play(panel);
-  }
 
-  if (panel) {
-    new IntersectionObserver(([e]) => {
-      panelVisible = e.isIntersecting;
-      if (panelVisible) resumePanel();
-      else if (current === panel) stop(panel);
-    }, { threshold: PAGE.panelAt }).observe(panel.el);
-  }
-
-  // Cards: hover or keyboard focus, on pointer devices only. Touch shows the poster.
+  // Hover or keyboard focus, on pointer devices only. Touch shows the poster.
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
-  for (const s of cards) {
+  for (const s of slots) {
     const card = s.el.closest('.project') || s.el;
     const start = () => { if (fine.matches && !reducedMq.matches) play(s); };
-    const end = () => { if (current === s) { stop(s); resumePanel(); } };
+    const end = () => { if (current === s) stop(s); };
     card.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') start(); });
     card.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !card.contains(document.activeElement)) end(); });
     card.addEventListener('focusin', start);
@@ -219,8 +213,7 @@ function initVideos() {
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') { if (current) stop(current); }
-    else resumePanel();
+    if (document.visibilityState === 'hidden' && current) stop(current);
   });
   reducedMq.addEventListener('change', (e) => { if (e.matches && current) stop(current); });
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Gk5MpRhphbZQluxbbP7QkhAmW0XrTdwfiRHEAZEoQyM='; style-src 'self'; img-src 'self'; font-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Jorge Sánchez Encinas · Computer Science student</title>
   <meta name="description" content="Computer Science student at Tec de Monterrey. Real-time AI, robot control software, and a growing focus on cybersecurity.">
@@ -17,24 +17,13 @@
   <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/geist-mono-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/css/site.css?v=20261112l">
-  <link rel="modulepreload" href="assets/js/sphere.js?v=20261112l">
-  <link rel="modulepreload" href="assets/js/page.js?v=20261112l">
-  <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!location.hash){d.classList.add('intro-on');if('scrollRestoration' in history)history.scrollRestoration='manual'}}catch(e){}})();</script>
-  <script type="module" src="assets/js/main.js?v=20261112l"></script>
+  <link rel="stylesheet" href="assets/css/site.css?v=20261112m">
+  <link rel="modulepreload" href="assets/js/sphere.js?v=20261112m">
+  <link rel="modulepreload" href="assets/js/page.js?v=20261112m">
+  <script type="module" src="assets/js/main.js?v=20261112m"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-
-  <!-- Intro on every load (not with reduced motion or a #link): the name splits to the edges
-       along a hairline, the row rises to the nav, then the headline is wiped in (site.css, "7. Intro") -->
-  <div class="intro" aria-hidden="true">
-    <div class="intro__row">
-      <span class="intro__half intro__half--l"><span class="intro__word">Jorge Enrique</span><span class="intro__rule"></span></span>
-      <svg class="mark intro__mark" viewBox="0 0 32 32" focusable="false"><rect class="mark__bg" width="32" height="32" rx="7"/><path class="mark__glyph" d="M9 10.5l5.5 5.5L9 21.5M17 21.75h6.5"/></svg>
-      <span class="intro__half intro__half--r"><span class="intro__rule"></span><span class="intro__word">Sánchez Encinas</span></span>
-    </div>
-  </div>
 
   <header class="nav" data-nav>
     <div class="nav__bar">
@@ -237,30 +226,9 @@
           <p class="ghostterm__prompt"><span class="term__prompt">jorge@gdl:~$</span> ./ghost</p>
           <canvas class="ghostterm__screen"></canvas>
         </div>
-        <p class="statement__text" data-statement>I like software that has to answer right away: a robot with seconds left in a match, a model scoring live audio. Now I want to learn how systems like these hold up when someone tries to break them.</p>
-      </div>
-    </section>
-
-    <!-- Wide video panel -->
-    <section class="section section--flush" aria-labelledby="panel-title">
-      <div class="container">
-        <div class="panel" data-reveal>
-          <div class="panel__media media" data-video="panel">
-            <video class="media__video" muted playsinline loop preload="none" width="1280" height="720" aria-hidden="true" tabindex="-1">
-              <source src="assets/video/sample-panel.webm" type="video/webm">
-              <source src="assets/video/sample-panel.mp4" type="video/mp4">
-            </video>
-            <img class="media__poster" src="assets/video/sample-panel.webp" width="1280" height="720" alt="" loading="lazy" decoding="async">
-          </div>
-          <div class="panel__inner">
-            <h2 class="panel__title" id="panel-title"><span class="panel__l1">Software that</span> <span class="panel__l2">has to keep up.</span></h2>
-            <ul class="panel__list">
-              <li><a class="panel__row" href="#synthia"><span class="panel__item">Real-time AI pipelines</span><span class="panel__meta caption">Synthia</span><span class="arrow" aria-hidden="true">→</span></a></li>
-              <li><a class="panel__row" href="#first-7102"><span class="panel__item">Robot control</span><span class="panel__meta caption">FIRST 7102</span><span class="arrow" aria-hidden="true">→</span></a></li>
-              <li><a class="panel__row" href="#arm"><span class="panel__item">Kinematics and embedded C++</span><span class="panel__meta caption">6-DOF arm</span><span class="arrow" aria-hidden="true">→</span></a></li>
-              <li><a class="panel__row" href="#about"><span class="panel__item">Cybersecurity</span><span class="panel__meta caption">Current focus</span><span class="arrow" aria-hidden="true">→</span></a></li>
-            </ul>
-          </div>
+        <div class="statement__copy">
+          <p class="path statement__path" data-reveal><span><span class="path__sym">~/</span>now</span></p>
+          <p class="statement__text" data-statement>I like software that has to <em class="statement__em">answer right away</em>: a robot with seconds left in a match, a model scoring live audio. <span class="statement__next">Now I want to learn how systems like these hold up when someone tries to break them.</span><span class="statement__cursor" aria-hidden="true"></span></p>
         </div>
       </div>
     </section>

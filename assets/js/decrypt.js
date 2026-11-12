@@ -1,9 +1,8 @@
 /* =====================================================================
    decrypt.js: letters show random characters, then lock in left to right.
-   Used for the hero name (main.js, during the intro) and every section
-   and card title (page.js, when it scrolls into view).
-   Each real letter keeps its width (drawn transparent) and the random one
-   is drawn over it (site.css, ".dc"), so a line never shifts.
+   Used for every section and card title (page.js, when it scrolls into view).
+   The real text stays in place (transparent) under a small canvas, so a
+   line never shifts.
    ===================================================================== */
 
 /* ---------- DECRYPT CONSTANTS ---------- */
@@ -27,67 +26,7 @@ function scrambleFor(ch) {
   return set[(Math.random() * set.length) | 0];
 }
 
-// Wraps each letter of el (through any nested spans) in a scrambling span.
-// restore() puts the original markup back exactly.
-export function prepareDecrypt(el) {
-  const saved = el.innerHTML;
-  const chars = [];
-  if (!el.style.getPropertyValue('--dc-color')) el.style.setProperty('--dc-color', getComputedStyle(el).color);
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const texts = [];
-  while (walker.nextNode()) texts.push(walker.currentNode);
-  for (const node of texts) {
-    const frag = document.createDocumentFragment();
-    for (const ch of node.data) {
-      if (/\s/.test(ch)) { frag.append(ch); continue; }
-      const s = document.createElement('span');
-      s.className = 'dc is-scr';
-      s.textContent = ch;
-      s.dataset.s = scrambleFor(ch);
-      frag.append(s);
-      chars.push({ s, ch });
-    }
-    node.replaceWith(frag);
-  }
-  return { chars, restore() { el.innerHTML = saved; } };
-}
-
-// Scrambles from now; job k locks letter by letter between at + k * stagger and that + dur
-// (times on the performance.now() clock). Returns a function that ends it at once.
-export function runDecrypt(jobs, at, dur, stagger = 0) {
-  jobs.forEach((job, k) => {
-    const n = job.chars.length;
-    job.chars.forEach((c, i) => {
-      c.lockAt = at + k * stagger + ((i + 1) / n) * dur + (Math.random() - 0.5) * DECRYPT.jitterMs;
-    });
-  });
-  let lastSwap = 0, raf = 0, over = false;
-  const finish = () => {
-    if (over) return;
-    over = true;
-    cancelAnimationFrame(raf);
-    jobs.forEach((j) => j.restore());
-  };
-  // The DOM changes only on ticks (every swapEveryMs): frames in between cost nothing to render.
-  function frame(now) {
-    raf = requestAnimationFrame(frame);
-    if (now - lastSwap < DECRYPT.swapEveryMs) return;
-    lastSwap = now;
-    let left = 0;
-    for (const job of jobs) {
-      for (const c of job.chars) {
-        if (c.done) continue;
-        if (now >= c.lockAt) { c.done = true; c.s.classList.remove('is-scr'); }
-        else { left++; c.s.dataset.s = scrambleFor(c.ch); }
-      }
-    }
-    if (!left) finish();
-  }
-  raf = requestAnimationFrame(frame);
-  return finish;
-}
-
-// Titles: the same effect drawn on a small canvas over the title, so no per-letter elements
+// Titles: the effect is drawn on a small canvas over the title, so no per-letter elements
 // exist while the page scrolls. Letter positions are measured once, when it starts.
 // A settled letter is drawn on the text's own baseline at the exact spot the page puts it,
 // so nothing moves when the canvas is swapped for the real text.
