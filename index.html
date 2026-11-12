@@ -17,11 +17,11 @@
   <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/geist-mono-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/css/site.css">
-  <link rel="modulepreload" href="assets/js/sphere.js">
-  <link rel="modulepreload" href="assets/js/page.js">
+  <link rel="stylesheet" href="assets/css/site.css?v=20261112a">
+  <link rel="modulepreload" href="assets/js/sphere.js?v=20261112a">
+  <link rel="modulepreload" href="assets/js/page.js?v=20261112a">
   <script>(function(){try{var d=document.documentElement;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!location.hash){d.classList.add('intro-on');if('scrollRestoration' in history)history.scrollRestoration='manual'}}catch(e){}})();</script>
-  <script type="module" src="assets/js/main.js"></script>
+  <script type="module" src="assets/js/main.js?v=20261112a"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -105,7 +105,7 @@
 
           <a class="latest" href="#synthia">
             <span class="latest__label caption"><span class="latest__dot" aria-hidden="true"></span>Latest · Sep 2026</span>
-            <span class="latest__text">HackMTY 2026 finalist, 4th place, with Synthia, a real-time AI voice detection pipeline.</span>
+            <span class="latest__text">HackMTY 2026 finalist, 4th of 38 teams, with Synthia, a real-time AI voice detection pipeline.</span>
             <span class="latest__arrow" aria-hidden="true">→</span>
           </a>
         </div>
@@ -140,10 +140,10 @@
             <!-- From 1200 px the children below are placed on the card grid (site.css, "Synthia"):
                  keep at most 5 items before .stats. For a longer write-up, wrap them in one element. -->
             <div class="project__body">
-              <p class="project__meta caption">HackMTY 2026 · Finalist, 4th place · Sep 2026</p>
+              <p class="project__meta caption">HackMTY 2026 · Finalist, 4th of 38 teams · Sep 2026</p>
               <h3 class="project__title" id="synthia-title">Synthia: real-time AI voice detection</h3>
-              <!-- Draft from the repo README (Spanish), for Jorge's review -->
-              <p class="project__text">Takes a recorded phone call and tells whether the caller is a human or an AI, from how the conversation unfolds, how the voice behaves and how the audio arrives over the phone line.</p>
+              <!-- Draft from the repo README and Jorge's HackMTY post, for his review -->
+              <p class="project__text">Built for HackMTY's Reto Altur, a real problem for banking contact centers: tell in real time whether a call comes from a person or an AI voice agent. It looks at how the conversation unfolds, how the voice behaves and how the audio arrives over the phone line.</p>
               <p class="project__text">A real-time detection pipeline with three layers: turn-taking dynamics (51 features), acoustic signal metrics (58 features) and an out-of-fold stacked ensemble of XGBoost and logistic regression.</p>
               <p class="project__text">Served from a containerized FastAPI endpoint on a Linux server, exposed through Cloudflare Tunnels for continuous uptime and live evaluation. <span class="placeholder">[ PLACEHOLDER: your role on the team ]</span></p>
               <div class="stats">
@@ -153,7 +153,7 @@
                   <div class="stats__item"><dt class="caption">Balanced accuracy</dt><dd>~98.8%</dd></div>
                   <div class="stats__item"><dt class="caption">Avg. response latency</dt><dd>1.15 s</dd></div>
                 </dl>
-                <p class="placeholder">[ PLACEHOLDER: how these were evaluated: dataset, split, who ran it ]</p>
+                <p class="stats__note">Measured on the competition's live benchmark: 81 calls, all 81 answered correctly. A small sample, so these describe that benchmark, not every call.</p>
               </div>
               <ul class="tech" aria-label="Tech used"><li>python</li><li>linux</li><li>cloudflare tunnels</li><li>xgboost</li><li>fastapi</li><li>containers</li></ul>
               <p class="project__links"><a class="tlink" href="https://github.com/jsencinas/Synthia_hackmty26" rel="noopener">Code on GitHub <span class="tlink__arrow" aria-hidden="true">↗</span></a></p>
@@ -219,7 +219,11 @@
     <!-- Statement (draft copy, for Jorge's review) -->
     <section class="section statement" aria-label="Statement">
       <div class="container statement__inner">
-        <canvas class="statement__art" aria-hidden="true"></canvas>
+        <div class="statement__art ghostterm" aria-hidden="true">
+          <div class="ghostterm__bar"><span class="ghostterm__dots"><i></i><i></i><i></i></span><span class="ghostterm__title">~/ghost</span></div>
+          <p class="ghostterm__prompt"><span class="term__prompt">jorge@gdl:~$</span> ./ghost</p>
+          <canvas class="ghostterm__screen"></canvas>
+        </div>
         <p class="statement__text" data-statement>I like software that has to answer right away: a robot with seconds left in a match, a model scoring live audio. Now I want to learn how systems like these hold up when someone tries to break them.</p>
       </div>
     </section>
@@ -262,7 +266,7 @@
             <p><span class="placeholder">[ DRAFT: review this text ]</span></p>
             <p>I'm Jorge, a Computer Science student at Tec de Monterrey. From 2023 to 2025 I was lead programmer and primary driver for FIRST Robotics team Daedalus 7102: I wrote the autonomous code, then drove the robot in the matches where it had to work.</p>
             <p>Outside class I lead people as well as code. With Techo Jalisco I run volunteer teams on housing builds, and in 2024 I was Vice President of ConstruyeTec. A build site and a software integration need the same things: a plan, a team that trusts it, and someone who checks the details.</p>
-            <p>I'm now focusing on cybersecurity. <span class="placeholder">[ PLACEHOLDER: what I'm learning or doing in cybersecurity: courses, labs, CTFs, certifications, or leave it out ]</span></p>
+            <p>I keep exploring Linux, developer tools and open-source projects, and I'm now focusing on cybersecurity. <span class="placeholder">[ PLACEHOLDER: what I'm learning or doing in cybersecurity: courses, labs, CTFs, certifications, or leave it out ]</span></p>
           </div>
         </div>
 
@@ -299,7 +303,9 @@
           <li class="ls__group"><span class="ls__dir">languages<span class="ls__slash" aria-hidden="true">/</span></span>
             <ul class="ls__items"><li>java</li><li>c</li><li>c++</li><li>python</li><li>sql</li><li>html</li><li>css</li><li>arduino</li></ul></li>
           <li class="ls__group"><span class="ls__dir">tools<span class="ls__slash" aria-hidden="true">/</span></span>
-            <ul class="ls__items"><li>linux</li><li>zsh</li><li>tmux</li><li>git</li><li>github</li></ul></li>
+            <ul class="ls__items"><li>linux</li><li>zsh</li><li>tmux</li><li>git</li><li>github</li><li>neovim</li></ul></li>
+          <li class="ls__group"><span class="ls__dir">areas<span class="ls__slash" aria-hidden="true">/</span></span>
+            <ul class="ls__items"><li>data structures &amp; algorithms</li><li>machine learning</li></ul></li>
           <li class="ls__group"><span class="ls__dir">spoken<span class="ls__slash" aria-hidden="true">/</span></span>
             <ul class="ls__items"><li>spanish (native)</li><li>english (B2)</li></ul></li>
         </ul>

@@ -45,4 +45,5 @@ Playback rules (in `page.js`): muted, inline, looped, `preload="none"`, and at m
 ## Maintenance
 
 - **Renew `security.txt` before 2027-11-01.** The `Expires` field in `.well-known/security.txt` must stay in the future, so update it (to about a year ahead) before that date.
+- **Bump the version tag when you change CSS or JS.** Every stylesheet and module URL ends in `?v=` plus the same tag (in `index.html`, and in the `import` lines of `main.js` and `page.js`). Change it everywhere at once, to any new value, so browsers fetch the new files instead of a cached copy. Use the same tag in every file, or a module loads twice.
 - **The inline script in `<head>` is pinned by a hash** in the Content-Security-Policy meta tag. If you change that script, recompute the hash (`sha256` of the exact script text, base64) and update the `script-src` value, or the browser will block it.

@@ -1,89 +1,52 @@
 /* =====================================================================
-   ghost.js: a dot-drawn ghost next to the statement (an original design).
-   It floats, its hem ripples, it sways, looks around and blinks.
-   Same rules as the hero sphere: 2D canvas, one rAF loop at about 30 fps,
-   devicePixelRatio capped, paused off screen and in hidden tabs,
-   one still frame with reduced motion.
+   ghost.js: a 2D ASCII ghost living in a small terminal window next to
+   the statement (an original design). It drifts and leans, bobs with a
+   little squash, ripples its hem, looks around and blinks, and plays a
+   rotating set of moves (hops, a loop, a shiver, a "boo", a wobble) while a
+   band of light runs across it. A ring of accent characters cycles
+   around its outline.
+
+   Rendering: each row of the ghost is built as a string and drawn with one
+   fillText per row and color (never one call per character); only the cells
+   around the ghost are worked out.
+   About 24 fps, devicePixelRatio capped, paused off screen and in hidden
+   tabs, still frame with reduced motion.
    ===================================================================== */
 
 /* ---------- VISUAL CONSTANTS ---------- */
 const GHOST = {
-  dots: 1300,               // body dots (phones use dotsPhone)
-  dotsPhone: 750,
-  eyeDots: 190,             // per eye
-  phoneBelow: 600,          // canvas widths under this use the phone counts
-  radius: 0.5,              // body radius; the shape spans about -0.6..0.65 vertically
-  domeY: 0.15,              // where the dome meets the body
-  hemY: -0.42,              // average bottom edge
-  hemBumps: 7,              // scallops around the hem
-  hemDepth: 0.16,
-  hemEdgeDots: 150,         // a denser row along the hem, so the scallops read
-  hemWaveMs: 1400,          // one ripple period
-  floatPx: 0.06,            // bob height, in body units
-  floatMs: 2800,
-  swayDeg: 28,              // turns left and right of facing you
-  swayMs: 7000,
-  eyeY: 0.2, eyeAngle: 0.36, eyeW: 0.12, eyeH: 0.15,  // eye centers and half sizes, on the surface
-  pupilR: 0.07, pupilReach: 0.05,                   // pupil (a hole in the eye) size and how far it moves
-  lookEveryMs: 1700,        // a new place to look
-  blinkEveryMs: 4300, blinkMs: 160,
-  scale: 0.4,               // size as a share of the canvas side
-  perspective: 0.18,
-  tiltXDeg: 10,
-  fps: 30,
+  ramp: ' .:-=+*x%#$@',     // dark to bright
+  rimRamp: '-=+=',          // the accent ring cycles through these
+  cellPx: 7,                // font size: small cells, so the ghost has enough of them to read clearly
+  cellPxSmall: 7,
+  smallBelow: 300,          // screen widths (px) under this use the small font
+  lineHeight: 1.2,
+  size: 0.3,                // ghost radius as a share of the screen's smaller side
+  // motion (all in ms or ghost radii)
+  driftMs: 7400, driftAmp: 0.7,       // left and right across the screen
+  bobMs: 1700, bobAmp: 0.1,
+  squash: 0.06,                       // squash at the bottom of each bob
+  leanMax: 0.22,                      // leans into its drift
+  hemMs: 1300, hemBumps: 3.5, hemDepth: 0.13,
+  lookMs: 2100,                       // a new place to look
+  blinkMs: 3900, blinkDur: 170,
+  sweepMs: 2600,                      // the band of light
+  rimCells: 1.4, rimSpeed: 3,         // ring width in cells, and how fast its characters cycle
+  // eyes, in ghost radii from the center
+  eyeX: 0.38, eyeY: -0.12, eyeW: 0.22, eyeH: 0.3, pupil: 0.11, pupilReach: 0.09,
+  fps: 24,
   dprMax: 1.5,
-  dotRGB: [243, 241, 236],
-  edges: [-0.6, -0.2, 0.2, 0.6],            // depth buckets, back to front
-  alpha: [0.12, 0.22, 0.38, 0.6, 0.84],
-  size: [1.1, 1.3, 1.6, 1.9, 2.2],
-  seed: 31,
+  textRGB: [243, 241, 236],
+  accentRGB: [217, 199, 160],
 };
-// where the eyes look, in turn (x, y in pupil-reach units)
-const LOOKS = [[0, 0], [1, 0.1], [1, 0.1], [0, 0], [-1, -0.2], [-0.6, 0.8], [0, 0], [0.4, -0.6]];
+const LOOKS = [[0, 0], [1, 0.2], [1, -0.3], [0, 0.4], [-1, 0], [-0.8, -0.5], [0, 0]];
+// Moves played in turn on top of the drift, each fading in and out smoothly.
+const MOVES = ['rest', 'hops', 'rest', 'loop', 'shiver', 'rest', 'boo', 'wobble'];
+const MOVE_MS = 3200;
 /* -------------------------------------- */
 
 const TAU = Math.PI * 2;
-const PHI = (Math.sqrt(5) - 1) / 2;
-const frac = (v) => v - Math.floor(v);
 const smooth = (t) => t * t * (3 - 2 * t);
-
-// Points are stored as surface coordinates and placed in 3D every frame,
-// so the hem can ripple and the eyes can blink.
-function build(nBody, nEye) {
-  const G = GHOST, R = G.radius;
-  const domeArea = TAU * R * R, sideArea = TAU * R * (G.domeY - G.hemY);
-  const nDome = Math.round(nBody * domeArea / (domeArea + sideArea));
-  const body = [];
-  const inEye = (th, y) => [-1, 1].some((s) => {
-    const du = (th - s * G.eyeAngle) * R / (G.eyeW * 1.15), dv = (y - G.eyeY) / (G.eyeH * 1.15);
-    return du * du + dv * dv < 1;
-  });
-  // dome: even spread over a hemisphere (cos of the polar angle uniform in 0..1)
-  for (let i = 0; i < nDome; i++) {
-    const c = (i + 0.5) / nDome, th = TAU * frac(i * PHI);
-    const y = G.domeY + R * c, r = R * Math.sqrt(1 - c * c);
-    if (y - G.domeY < 0.5 * R && inEye(th - Math.PI / 2, y)) continue;
-    body.push({ k: 0, th, r, y });
-  }
-  // side: (angle, share of the way down); y is worked out each frame from the hem
-  const nSide = nBody - nDome;
-  for (let i = 0; i < nSide; i++) {
-    const v = (i + 0.5) / nSide, th = TAU * frac(i * PHI);
-    const y0 = G.domeY - v * (G.domeY - G.hemY);
-    if (inEye(th - Math.PI / 2, y0)) continue;
-    body.push({ k: 1, th, v });
-  }
-  for (let i = 0; i < GHOST.hemEdgeDots; i++) body.push({ k: 1, th: TAU * i / GHOST.hemEdgeDots, v: 1 });
-  // eyes: filled ellipses on the front of the body (angle 0 faces the viewer)
-  const eyes = [];
-  for (const s of [-1, 1]) {
-    for (let i = 0; i < nEye; i++) {
-      const rr = Math.sqrt((i + 0.5) / nEye), a = TAU * frac(i * PHI);
-      eyes.push({ s, u: rr * Math.cos(a), w: rr * Math.sin(a) });   // unit-disc coordinates
-    }
-  }
-  return { body, eyes };
-}
 
 export function initGhost(canvas) {
   const ctx = canvas && canvas.getContext('2d');
@@ -91,99 +54,123 @@ export function initGhost(canvas) {
   const G = GHOST;
   const reducedMq = matchMedia('(prefers-reduced-motion: reduce)');
   let reduced = reducedMq.matches;
-  const rgb = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-  const dotStyles = G.alpha.map((a) => rgb(G.dotRGB, a));
-  const eyeStyle = rgb(G.dotRGB, 1), shadowStyle = rgb(G.dotRGB, 0.1);
 
-  let model = null, w = 0, h = 0, dpr = 1, phone = null, sizes = [];
+  let w = 0, h = 0, dpr = 1, cw = 0, chH = 0, cols = 0, rows = 0, font = '';
+  const bodyFill = `rgba(${GHOST.textRGB.join(',')},0.9)`, rimFill = `rgba(${GHOST.accentRGB.join(',')},0.85)`;
   let raf = 0, last = 0, time = 0, onScreen = false;
-  const buckets = G.alpha.map(() => []), eyePts = [], shadowPts = [];
 
-  function layout(cw, ch) {
-    w = cw; h = ch;
+  function layout(width, height) {
+    w = width; h = height;
     dpr = Math.min(window.devicePixelRatio || 1, G.dprMax);
     canvas.width = Math.max(1, Math.round(w * dpr));
     canvas.height = Math.max(1, Math.round(h * dpr));
-    const isPhone = w < G.phoneBelow;
-    if (isPhone !== phone) { phone = isPhone; model = build(phone ? G.dotsPhone : G.dots, phone ? Math.round(G.eyeDots * 0.7) : G.eyeDots); }
-    sizes = G.size.map((s) => Math.max(1, Math.round(s * dpr)));
+    const px = w < G.smallBelow ? G.cellPxSmall : G.cellPx;
+    const fam = getComputedStyle(document.documentElement).getPropertyValue('--font-mono') || 'monospace';
+    font = `400 ${px * dpr}px ${fam}`;
+    const m = document.createElement('canvas').getContext('2d');
+    m.font = font;
+    cw = m.measureText('M').width / dpr;
+    chH = px * G.lineHeight;
+    cols = Math.floor(w / cw); rows = Math.floor(h / chH);
   }
 
-  // where the pupils point and how open the eyes are, at time t
-  function eyesAt(t) {
-    const n = t / G.lookEveryMs, k = Math.floor(n), f = smooth(Math.min(1, (n - k) * 2.5));
+  function state(t) {
+    const R = Math.min(w, h) * G.size;
+    const driftP = TAU * t / G.driftMs;
+    const drift = Math.sin(driftP), vel = Math.cos(driftP);
+    const bob = Math.sin(TAU * t / G.bobMs);
+    // the current move and how strongly it shows (0 at its start and end, 1 in the middle)
+    const mi = Math.floor(t / MOVE_MS), mt = (t % MOVE_MS) / MOVE_MS;
+    const move = MOVES[mi % MOVES.length], env = Math.sin(Math.PI * mt) ** 2;
+    let mx = 0, my = 0, grow = 0, wob = 0, hop = 0, wide = 0;
+    if (move === 'hops') { hop = Math.abs(Math.sin(Math.PI * mt * 3)) * env; my = -0.35 * hop; }
+    else if (move === 'loop') { const a = TAU * mt; mx = 0.45 * Math.sin(a) * env; my = -0.3 * (1 - Math.cos(a)) * env; }
+    else if (move === 'shiver') { mx = 0.05 * Math.sin(TAU * t / 90) * env; wide = env; }
+    else if (move === 'boo') { grow = 0.16 * Math.sin(Math.PI * Math.min(1, mt * 1.6)) ** 2; wide = grow / 0.16; }
+    else if (move === 'wobble') { wob = 0.45 * Math.sin(TAU * mt * 4) * env; }
+    const maxX = Math.max(0, w / 2 - R * 1.7);   // keeps the ghost, its lean and its ring inside the screen
+    const n = t / G.lookMs, k = Math.floor(n), f = smooth(Math.min(1, (n - k) * 3));
     const a = LOOKS[k % LOOKS.length], b = LOOKS[(k + 1) % LOOKS.length];
-    const look = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
-    const bt = t % G.blinkEveryMs;
-    const open = bt < G.blinkMs ? Math.abs(1 - 2 * bt / G.blinkMs) * 0.9 + 0.1 : 1;
-    return { look, open };
+    const bt = t % G.blinkMs;
+    return {
+      R: R * (1 + grow),
+      x: Math.max(R * 1.7, Math.min(w - R * 1.7, w / 2 + Math.min(maxX, R * G.driftAmp * 1.6) * drift + mx * R)),
+      y: h * 0.5 - R * (G.bobAmp * bob * (1 - wide) - my),
+      squash: G.squash * Math.max(0, -bob) * (1 - hop) - 0.06 * hop,   // squashes low, stretches in a hop
+      lean: G.leanMax * vel * (1 - env * 0.6) + wob,
+      hem: TAU * t / G.hemMs,
+      lookX: ((a[0] + (b[0] - a[0]) * f) * 0.6 + vel * 0.4) * (1 - wide),   // wide eyes stare straight ahead
+      lookY: (a[1] + (b[1] - a[1]) * f) * (1 - wide),
+      wide,
+      open: bt < G.blinkDur ? Math.abs(1 - 2 * bt / G.blinkDur) * 0.85 + 0.15 : 1,
+      sweep: (t % G.sweepMs) / G.sweepMs,
+      t,
+    };
   }
 
   function draw() {
-    if (!model || !w) return;
-    const t = reduced ? 0 : time;
-    const R = G.radius;
-    const sway = reduced ? -0.25 : (G.swayDeg * Math.PI / 180) * Math.sin(TAU * t / G.swayMs);
-    const lift = reduced ? 0 : G.floatPx * Math.sin(TAU * t / G.floatMs);
-    const phase = TAU * t / G.hemWaveMs;
-    const { look, open } = reduced ? { look: [0, 0], open: 1 } : eyesAt(t);
-    const ca = Math.cos(sway), sa = Math.sin(sway);
-    const tx = G.tiltXDeg * Math.PI / 180, cx = Math.cos(tx), sx = Math.sin(tx);
-    const S = Math.min(w, h) * G.scale, ox = w / 2, oy = h * 0.47;
-
-    for (const b of buckets) b.length = 0;
-    eyePts.length = 0; shadowPts.length = 0;
-
-    // object point (x, y, z) -> screen, with depth bucket
-    const project = (x, y, z, out, bucketed) => {
-      const x1 = x * ca + z * sa, z1 = z * ca - x * sa;
-      const y2 = (y + lift) * cx - z1 * sx, z2 = (y + lift) * sx + z1 * cx;
-      const depth = Math.max(-1, Math.min(1, z2 / R));
-      const s = S * (1 + depth * G.perspective);
-      const px = ox + x1 * s, py = oy - y2 * s;
-      if (bucketed) {
-        let k = 0;
-        while (k < G.edges.length && depth >= G.edges[k]) k++;
-        buckets[k].push(px, py);
-      } else if (z2 > -0.05) out.push(px, py);   // eyes only on the side facing you
-    };
-
-    for (const p of model.body) {
-      let x, y, z;
-      if (p.k === 0) { x = p.r * Math.cos(p.th); y = p.y; z = p.r * Math.sin(p.th); }
-      else {
-        const hem = G.hemY - G.hemDepth * (0.5 + 0.5 * Math.cos(G.hemBumps * p.th - phase));
-        y = G.domeY - p.v * (G.domeY - hem);
-        x = R * Math.cos(p.th); z = R * Math.sin(p.th);
-      }
-      project(x, y, z, null, true);
-    }
-    for (const e of model.eyes) {
-      const u = e.u * G.eyeW, v = e.w * G.eyeH * open;
-      const th = e.s * G.eyeAngle + u / R;            // around the body, from the front
-      const y = G.eyeY + v;
-      const r = y > G.domeY ? Math.sqrt(Math.max(0, R * R - (y - G.domeY) ** 2)) : R;
-      const x = r * Math.sin(th), z = r * Math.cos(th) + 0.01;
-      const du = u - look[0] * G.pupilReach, dv = v - look[1] * G.pupilReach * open;
-      if (du * du + dv * dv < G.pupilR * G.pupilR * open) continue;   // the pupil is a hole
-      project(x, y, z, eyePts, false);
-    }
-    // shadow: a flat ring of faint dots that shrinks as the ghost rises
-    const shrink = 1 - lift * 2.2;
-    for (let i = 0; i < 60; i++) {
-      const a = TAU * i / 60, rr = 0.42 * shrink * (0.6 + 0.4 * ((i * 7) % 3) / 2);
-      shadowPts.push(ox + Math.cos(a) * rr * S, oy + (0.68 + Math.sin(a) * rr * 0.16) * S);
-    }
-
+    if (!w || !font) return;
+    const s = state(reduced ? 1200 : time);
+    const nRamp = G.ramp.length, rimW = (G.rimCells * cw) / s.R;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const dots = (list, size, style) => {
-      ctx.fillStyle = style;
-      const half = size / 2;
-      for (let j = 0; j < list.length; j += 2) ctx.fillRect(Math.round(list[j] * dpr - half), Math.round(list[j + 1] * dpr - half), size, size);
-    };
-    dots(shadowPts, sizes[1], shadowStyle);
-    buckets.forEach((list, k) => dots(list, sizes[k], dotStyles[k]));
-    dots(eyePts, sizes[sizes.length - 1], eyeStyle);
+    ctx.font = font;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    const body = [], rim = [];
+    // only the cells around the ghost
+    const c0 = Math.max(0, Math.floor((s.x - s.R * 1.6) / cw)), c1 = Math.min(cols - 1, Math.ceil((s.x + s.R * 1.6) / cw));
+    const r0 = Math.max(0, Math.floor((s.y - s.R * 1.6) / chH)), r1 = Math.min(rows - 1, Math.ceil((s.y + s.R * 1.6) / chH));
+    for (let r = r0; r <= r1; r++) {
+      body.length = 0; rim.length = 0;
+      let anyBody = false, anyRim = false;
+      for (let c = c0; c <= c1; c++) {
+        // cell center in ghost space: v grows downward; lean shears the body, squash widens it
+        let v = ((r + 0.5) * chH - s.y) / s.R;
+        let u = ((c + 0.5) * cw - s.x) / s.R;
+        v /= 1 - s.squash; u /= 1 + s.squash * 0.8;
+        u -= s.lean * (v + 0.2);
+        // distance inside the outline (negative outside), in ghost radii
+        const hemV = 0.95 + G.hemDepth * Math.sin(u * Math.PI * G.hemBumps + s.hem);
+        let d;
+        if (v < -0.15) d = 1 - Math.hypot(u, v + 0.15);
+        else d = Math.min(1 - Math.abs(u), hemV - v);
+        let glyph = -1, row = 0;
+        if (d > 0) {
+          // eyes: dark sockets with a bright pupil that looks around
+          let inEye = false, inPupil = false;
+          for (const side of [-1, 1]) {
+            const ex = u - side * G.eyeX, ey = (v - G.eyeY) / s.open, k = 1 + 0.25 * s.wide;
+            if ((ex / (G.eyeW * k)) ** 2 + (ey / (G.eyeH * k)) ** 2 < 1) {
+              inEye = true;
+              const px = ex - s.lookX * G.pupilReach, py = ey - s.lookY * G.pupilReach;
+              if (px * px + py * py < G.pupil * G.pupil && s.open > 0.5) inPupil = true;
+            }
+          }
+          if (inPupil) glyph = nRamp - 1;
+          else if (!inEye) {
+            // brighter toward the middle and the upper left, plus a band of light running across
+            // a mostly solid fill: bright inside, tapering only near the edge
+            const depth = Math.min(1, d * 6);
+            const light = 0.78 + 0.12 * (-u * 0.5 - v * 0.5);
+            const band = Math.exp(-(((u + v) * 0.7 - (s.sweep * 4 - 2)) ** 2) * 8) * 0.25;
+            const b = Math.max(0, Math.min(1, depth * light + band));
+            glyph = Math.max(1, Math.min(nRamp - 1, Math.round(b * (nRamp - 1))));
+          }
+        } else if (d > -rimW) {
+          // the ring: characters cycle around the outline
+          const ang = Math.atan2(v, u);
+          glyph = nRamp + Math.abs(Math.floor(ang * 3 + s.t / 1000 * G.rimSpeed)) % G.rimRamp.length;
+          row = 1;
+        }
+        const ch = glyph > 0 ? (row ? G.rimRamp[glyph - nRamp] : G.ramp[glyph]) : ' ';
+        body.push(row || glyph <= 0 ? ' ' : ch);
+        rim.push(row ? ch : ' ');
+        if (glyph > 0) { if (row) anyRim = true; else anyBody = true; }
+      }
+      const x = c0 * cw * dpr, y = (r + 0.5) * chH * dpr;
+      if (anyBody) { ctx.fillStyle = bodyFill; ctx.fillText(body.join(''), x, y); }
+      if (anyRim) { ctx.fillStyle = rimFill; ctx.fillText(rim.join(''), x, y); }
+    }
   }
 
   function tick(now) {
@@ -199,12 +186,17 @@ export function initGhost(canvas) {
     else if (!run && raf) { cancelAnimationFrame(raf); raf = 0; }
   }
 
-  new ResizeObserver((entries) => {
-    const r = entries[entries.length - 1].contentRect;
-    layout(r.width, r.height);
-    draw();
-  }).observe(canvas);
-  new IntersectionObserver((entries) => { onScreen = entries[entries.length - 1].isIntersecting; sync(); }).observe(canvas);
-  document.addEventListener('visibilitychange', sync);
-  reducedMq.addEventListener('change', (e) => { reduced = e.matches; sync(); draw(); });
+  const start = () => {
+    new ResizeObserver((entries) => {
+      const r = entries[entries.length - 1].contentRect;
+      layout(r.width, r.height);
+      draw();
+    }).observe(canvas);
+    new IntersectionObserver((entries) => { onScreen = entries[entries.length - 1].isIntersecting; sync(); }).observe(canvas);
+    document.addEventListener('visibilitychange', sync);
+    reducedMq.addEventListener('change', (e) => { reduced = e.matches; sync(); draw(); });
+  };
+  // the characters need the mono font loaded
+  if (document.fonts && document.fonts.load) document.fonts.load('400 12px "Geist Mono"').then(start, start);
+  else start();
 }
