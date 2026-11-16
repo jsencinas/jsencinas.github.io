@@ -113,6 +113,7 @@
   --nav-panel-dur: 200ms;
 
   --decrypt-dim: .55;             /* scrambled letters while a title decrypts */
+  --hero-name-hold: 2s;           /* longest the hero name waits hidden for its decrypt (no-JS fallback) */
 
   /* hero */
   --hero-min: 640px;
@@ -522,6 +523,14 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 }
 .hero__l1, .hero__l2 { display: block; }
 .hero__l2 { color: var(--text-2); }     /* the second name line in gray, as in the reference */
+/* The name decrypts on load (main.js). It stays hidden until the script takes over, so the real name never
+   flashes before the effect; if the script never runs it shows by itself after --hero-name-hold.
+   Reduced motion: shown at once, no effect. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero__title { animation: hero-name-hold var(--hero-name-hold) step-end both; }
+  .hero__title.is-live { animation: none; }
+}
+@keyframes hero-name-hold { from { opacity: 0; } to { opacity: 1; } }
 
 .hero__foot {
   grid-row: 4;

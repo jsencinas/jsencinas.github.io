@@ -1,13 +1,43 @@
 /* =====================================================================
-   main.js: hero sphere, nav menu, clock, console greeting.
+   main.js: hero sphere and name decrypt, nav menu, clock, console greeting.
    Sections below the hero live in page.js.
    ===================================================================== */
 import { initSphere } from './sphere.js?v=20261115a';
 import { initPage } from './page.js?v=20261115a';
+import { decryptTitle } from './decrypt.js?v=20261115a';
+
+/* ---------- HERO NAME CONSTANTS ---------- */
+const NAME = {
+  delayMs: 200,        // scrambling starts at once, locking starts this much later
+  msPerChar: 60,       // same pace as the section titles (page.js)
+  minMs: 1300,
+  maxMs: 2600,
+  fontWaitMs: 1200,    // if Archivo is not ready by then, show the name without the effect
+};
+/* ------------------------------------------ */
 
 /* ---------- Hero: the sphere forms as soon as the page loads ---------- */
 function initHero() {
   initSphere(document.querySelector('.hero__canvas')).reveal();
+  initName();
+}
+
+/* ---------- Hero: the name decrypts on load, like the section titles ---------- */
+// Letter positions are measured when it starts, so it waits for Archivo first.
+function initName() {
+  const el = document.querySelector('.hero__title');
+  if (!el) return;
+  const show = () => el.classList.add('is-live');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { show(); return; }
+  const timeout = new Promise((resolve) => setTimeout(resolve, NAME.fontWaitMs, false));
+  const fonts = document.fonts ? document.fonts.load('400 1em Archivo').then(() => true, () => true) : Promise.resolve(true);
+  Promise.race([fonts, timeout]).then((ready) => {
+    if (ready) {
+      const len = el.textContent.replace(/\s/g, '').length;
+      decryptTitle(el, Math.min(NAME.maxMs, Math.max(NAME.minMs, len * NAME.msPerChar)), NAME.delayMs);
+    }
+    show();
+  });
 }
 
 /* ---------- Phone menu ---------- */
