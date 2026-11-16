@@ -5,7 +5,7 @@
    No scroll listeners: only IntersectionObserver and CSS.
    ===================================================================== */
 
-import { decryptTitle } from './decrypt.js?v=20261115a';
+import { decryptTitle } from './decrypt.js?v=20261116b';
 
 /* ---------- TIMING CONSTANTS ---------- */
 const PAGE = {

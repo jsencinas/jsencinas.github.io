@@ -430,6 +430,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 /* ---------- 7. Title decrypt (decrypt.js) ---------- */
 /* While a title decrypts, its real text is transparent and a small canvas draws the effect over it. */
 .dc-hide, .dc-hide * { color: transparent !important; }
+.dc-clip { background-repeat: no-repeat; background-origin: border-box; -webkit-background-clip: text; background-clip: text; }   /* settled letters show through background patches (decrypt.js) */
 .dc-canvas { position: absolute; max-width: none; pointer-events: none; }   /* wider than its title on purpose (8px each side), so never squeezed */
 
 /* ---------- 8. Hero ---------- */
