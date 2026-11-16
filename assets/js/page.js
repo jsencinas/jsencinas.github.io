@@ -1,11 +1,11 @@
 /* =====================================================================
    page.js: everything below the hero.
    Fade-up on entering the viewport, title decrypt, terminal typing and cursor,
-   statement reading reveal, video playback rules.
+   video playback rules.
    No scroll listeners: only IntersectionObserver and CSS.
    ===================================================================== */
 
-import { decryptTitle } from './decrypt.js?v=20261112q';
+import { decryptTitle } from './decrypt.js?v=20261115a';
 
 /* ---------- TIMING CONSTANTS ---------- */
 const PAGE = {
@@ -16,8 +16,6 @@ const PAGE = {
   termDelayMs: 500,
   typeEveryMs: 95,        // per character of the command
   rowEveryMs: 260,        // between the listing rows
-  statementGroups: 3,     // fallback without scroll-driven animations
-  statementAt: 0.4,
   titleDelayMs: 200,      // titles: scrambling starts on entry, locking starts this much later
   titleMsPerChar: 60,     // titles: decrypt time grows with length, between the two limits below
   titleMinMs: 1300,
@@ -103,47 +101,6 @@ function initTerminal() {
   }
 }
 
-/* ---------- Statement ---------- */
-// Wraps each word in a span (inside any inline markup, which is kept) so it can light up.
-function initStatement() {
-  const el = document.querySelector('[data-statement]');
-  if (!el || reduced) return;
-  const words = [];
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  for (const node of nodes) {
-    const frag = document.createDocumentFragment();
-    for (const part of node.data.split(/(\s+)/)) {
-      if (!part) continue;
-      if (/^\s+$/.test(part)) { frag.append(part); continue; }
-      const s = document.createElement('span');
-      s.className = 'w';
-      s.textContent = part;
-      frag.append(s);
-      words.push(s);
-    }
-    node.replaceWith(frag);
-  }
-  const last = Math.max(1, words.length - 1);
-  words.forEach((s, i) => {
-    s.style.setProperty('--p', (i / last).toFixed(3));
-    s.dataset.g = String(Math.min(PAGE.statementGroups - 1, Math.floor((i / (last + 1)) * PAGE.statementGroups)));
-  });
-
-  if (window.CSS && CSS.supports('animation-timeline: view()')) {
-    el.classList.add('is-scroll');
-    return;
-  }
-  el.classList.add('is-io');
-  const io = new IntersectionObserver(([e]) => {
-    if (!e.isIntersecting) return;
-    el.classList.add('is-in');
-    io.disconnect();
-  }, { threshold: PAGE.statementAt });
-  io.observe(el);
-}
-
 /* ---------- Titles decrypt as they come into view ---------- */
 function initTitles() {
   if (reduced || !('IntersectionObserver' in window)) return;
@@ -163,7 +120,7 @@ function initTitles() {
 function initArt() {
   const canvas = document.querySelector('.ghostterm__screen');
   if (!canvas) return;
-  const load = () => import('./ghost.js?v=20261112q').then((m) => m.initGhost(canvas));
+  const load = () => import('./ghost.js?v=20261115a').then((m) => m.initGhost(canvas));
   if (!('IntersectionObserver' in window)) { load(); return; }
   const io = new IntersectionObserver(([e]) => {
     if (!e.isIntersecting) return;
@@ -221,7 +178,6 @@ function initVideos() {
 export function initPage() {
   initReveal();
   initTerminal();
-  initStatement();
   initTitles();
   initArt();
   initVideos();
