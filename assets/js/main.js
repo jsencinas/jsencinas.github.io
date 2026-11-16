@@ -3,8 +3,8 @@
    Sections below the hero live in page.js.
    ===================================================================== */
 import { initSphere } from './sphere.js?v=20261115a';
-import { initPage } from './page.js?v=20261115a';
-import { decryptTitle } from './decrypt.js?v=20261115a';
+import { initPage } from './page.js?v=20261116b';
+import { decryptTitle } from './decrypt.js?v=20261116b';
 
 /* ---------- HERO NAME CONSTANTS ---------- */
 const NAME = {
